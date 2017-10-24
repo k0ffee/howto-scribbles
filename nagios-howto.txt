@@ -1,0 +1,65 @@
+:
+: Minimal Nagios setup:
+:
+
+pkg install -y nagios4 nginx fcgiwrap ipmitool net-snmp
+pkg install -y p5-libwww-6.15 p5-JSON
+pkg install -y mysql57-client
+
+print '&root' > ~nagios/.qmail
+
+grep '^nagios_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+nginx_enable="YES"
+fcgiwrap_enable="YES"
+fcgiwrap_user="www"
+fcgiwrap_socket_mode="700"
+fcgiwrap_socket_owner="www"
+fcgiwrap_socket_group="www"
+php_fpm_enable="YES"
+nagios_enable="YES"
+snmptrapd_enable="YES"
+snmptrapd_flags="-X"
+EOF
+
+sed 's/^\[www\]/[nagios]/' /usr/local/etc/php-fpm.conf > \
+    /usr/local/etc/php-fpm.conf~ && \
+        mv /usr/local/etc/php-fpm.conf~ /usr/local/etc/php-fpm.conf
+service php-fpm restart
+
+: 
+: XXX Error 404 in map.php
+:
+cd /usr/local/www/nagios && ln -s /usr/local/www/nagios nagios
+
+:
+: resource.cfg:
+:
+: One of:
+:
+cat >> /usr/local/etc/nagios/resource.cfg <<'EOF'
+
+#
+# On standby-Nagios, set this:
+#
+$USER2$="/usr/local/libexec/nagios/check_nrpe2 -H nagios-1-b -c check_nagios"
+#
+# On active alerting Nagios, set this:
+#
+#$USER2$="/usr/bin/false"
+EOF
+
+grep '^command\[check_nagios\]=' /usr/local/etc/nrpe.cfg || \
+    cat >> /usr/local/etc/nrpe.cfg <<'EOF'
+command[check_nagios]=/usr/local/libexec/nagios/check_nagios -t 20 -e 5 -F /var/spool/nagios/status.dat -C /usr/local/bin/nagios
+EOF
+
+:
+: On RabbitMQ nodes:
+:
+pkg install -y p5-Monitoring-Plugin p5-Module-Build
+:
+: Get https://github.com/jamesc/nagios-plugins-rabbitmq and put them there:
+:
+mkdir -p /usr/local/libexec/nagios

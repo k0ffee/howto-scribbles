@@ -1,0 +1,34 @@
+:
+: Minimal Percona MySQL build:
+:
+
+portsnap fetch
+portsnap extract >/dev/null
+cd /usr/ports && \
+    fetch https://reviews.freebsd.org/file/data/z6nekk4rw3n7ko3wrvu3/PHID-FILE-ddsqokoprhspfeqwtm3w/D8785.diff
+patch -p0 < D8785.diff
+
+pkg install bison cmake
+
+pkg unlock -y p5-DBD-mysql
+pkg remove -y percona56-client
+cd databases/percona57-client && make
+make install
+
+cd ../percona57-server && make
+make install
+
+cd ../p5-DBD-mysql && \
+    sed -E '/^USES=/s/mysql[[:space:]]+//' Makefile > Makefile~ && \
+        mv Makefile~ Makefile && make package && \
+pkg install -y p5-DBD-mysql*txz
+pkg lock -y p5-DBD-mysql
+mv p5-DBD-mysql*txz /root
+
+pkg install -y xtrabackup
+
+:
+: For 5.7:
+:
+: /usr/local/libexec/mysqld --initialize-insecure --user=mysql --datadir=/var/db/mysql --basedir=/usr/local
+:

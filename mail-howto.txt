@@ -1,0 +1,82 @@
+:
+: Minimal mail setup:
+:
+
+pkg remove -y ssmtp
+rm -fr /usr/local/etc/ssmtp
+pkg install -y netqmail-tls ucspi-tcp daemontools
+
+/var/qmail/scripts/enable-qmail
+
+print -r -- `hostname`.example.com > /var/qmail/control/me
+print '*:' > /var/qmail/control/tlsdestinations
+for name in default root postmaster mailer-daemon; do
+    print 'root@example.com' > /var/qmail/alias/.qmail-$name
+done
+
+mkdir -p /service /var/service
+
+grep '^svscan_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+svscan_enable="YES"
+EOF
+
+for dir in /service/qmail-send/log /service/qmail-smtp/log \
+           /service/qmail-smtp6/log; do
+    mkdir -p $dir
+    cat > $dir/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+exec multilog t .
+EOF
+    chmod 755 $dir/run
+done
+
+cat > /service/qmail-send/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin:/usr/bin
+mem=134217728
+exec env - PATH="/var/qmail/bin:$PATH" \
+    softlimit -m $mem qmail-start ./Maildir/ splogger qmail
+EOF
+chmod 755 /service/qmail-send/run
+
+cat > /usr/local/etc/tcp.smtp <<'EOF'
+127.:allow,RELAYCLIENT=""
+10.4.1.:allow,RELAYCLIENT=""
+::1::allow,RELAYCLIENT=""
+fd42:dc76:90a3:b::allow,RELAYCLIENT=""
+:deny
+EOF
+
+tcprules /usr/local/etc/tcp.smtp.cdb \
+    /usr/local/etc/tcp.smtp.tmp < /usr/local/etc/tcp.smtp 
+
+my_address=$(ifconfig lagg0 | awk '$1=="inet"{print$2}')
+
+cat > /service/qmail-smtp/run <<EOF
+#!/bin/sh
+PATH=/usr/local/bin:/usr/bin
+mem=134217728
+bind_to_address=$my_address
+exec env - PATH="/var/qmail/bin:\$PATH" \\
+    softlimit -m \$mem tcpserver -x /usr/local/etc/tcp.smtp.cdb \\
+        -R -H -u 82 -g 81 \$bind_to_address smtp qmail-smtpd
+EOF
+chmod 755 /service/qmail-smtp/run
+
+my_address=$(ifconfig lagg0 | awk '$1=="inet6"{print$2}')
+cat > /service/qmail-smtp6/run <<EOF
+#!/bin/sh
+PATH=/usr/local/bin:/usr/bin
+mem=134217728
+bind_to_address=$my_address
+exec env - PATH="/var/qmail/bin:\$PATH" \\
+    softlimit -m \$mem tcpserver -x /usr/local/etc/tcp.smtp.cdb \\
+        -R -H -u 82 -g 81 \$bind_to_address smtp qmail-smtpd
+EOF
+chmod 755 /service/qmail-smtp6/run
+
+ln -sf /service/* /var/service/
+service svscan start

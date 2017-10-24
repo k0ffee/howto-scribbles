@@ -1,0 +1,15 @@
+:
+: Minimal Debian NFS client setup:
+:
+: On client:
+:
+
+apt-get update && apt-get install nfs-common
+
+mkdir -p /var/www
+:
+: (lookupcache=none ensures changes show up quickly on different client nodes)
+:
+mount -v -t nfs4 \
+      -o soft,proto=tcp,timeo=150,retrans=1,sec=sys,lookupcache=none \
+         storage-3-b:/data/var/www /var/www

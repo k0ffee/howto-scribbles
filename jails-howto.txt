@@ -1,0 +1,48 @@
+:
+: Minimal Jail setup:
+:
+
+rm -r /usr/src/*; rm -r /usr/src/.*; rm -r /usr/obj/*
+svnlite checkout https://svn.freebsd.org/base/releng/11.1/ /usr/src >/root/log
+zfs create -o mountpoint=/jails -o atime=off zroot/jails
+zfs create zroot/jails/db-5-b
+cd /usr/src && make -j16 buildworld >> /root/log
+make installworld DESTDIR=/jails/db-5-b
+make distribution DESTDIR=/jails/db-5-b
+
+cat >> /etc/rc.conf <<'EOF'
+
+jail_enable="YES"
+jail_list="db-5-b"
+EOF
+
+cat > /etc/jail.conf <<'EOF'
+allow.raw_sockets;
+exec.start = "/bin/sh /etc/rc";
+exec.stop  = "/bin/sh /etc/rc.shutdown";
+mount.devfs;
+
+db-5-b {
+    path = "/jails/$name";
+    host.hostname = "$name";
+    interface = "lagg0";
+    ip4.addr  = "10.4.1.50";
+    ip6.addr  = "fd42:dc76:90a3:b::1:50";
+}
+EOF
+
+:
+: In host system:
+:
+grep '^net\.inet6\.ip6\.dad_count' /etc/systctl.conf || \
+    cat >> /etc/sysctl.conf <<'EOF'
+
+#
+# For jails.
+# IPv6 can be slow finishing duplicate address detection (DAD),
+# leaving jailed daemons fail to bind to interfaces.
+#
+net.inet6.ip6.dad_count=0
+EOF
+
+sysctl -f /etc/sysctl.conf

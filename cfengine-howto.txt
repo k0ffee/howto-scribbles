@@ -1,0 +1,62 @@
+:
+: Minimal Cfengine setup:
+:
+pkg install -y cfengine310 cfengine-masterfiles310 git
+
+cf-key
+
+cd /var/cfengine/bin && ln -s /usr/local/sbin/cf-* .
+
+:
+: Fill /var/cfengine/masterfiles from repo:
+:
+
+cf-agent --bootstrap $(ifconfig lagg0 | awk '$1=="inet6"{print $2}')
+
+:
+: Edit
+: /var/cfengine/inputs/failsafe.cf:
+: trustkey    => "false";
+:
+
+grep '^cf_' /etc/rc.conf || cat >> /etc/rc.conf <<EOF
+cf_serverd_enable="YES"
+cf_execd_enable="YES"
+EOF
+
+:
+: Adding a client:
+:
+pkg install -y cfengine310 && grep '^cf_execd_enable=' /etc/rc.conf || \
+    echo >> /etc/rc.conf && echo 'cf_execd_enable="YES"' >> /etc/rc.conf
+echo fd42:dc76:90a3:b::1:89 > /var/cfengine/policy_server.dat
+cf-key && cf-key -p /var/cfengine/ppkeys/localhost.pub
+cat /var/cfengine/ppkeys/localhost.pub && hostname
+
+cat > /var/cfengine/ppkeys/root-MD5=d41d8cd98f00b204e9800998ecf8427e.pub <<'EOF'
+MD5=d41d8cd98f00b204e9800998ecf8427e
+-----BEGIN RSA PUBLIC KEY-----
+[...]
+-----END RSA PUBLIC KEY-----
+cfengine-1-b
+EOF
+
+cd /var/cfengine/bin && ln -fs /usr/local/sbin/cf-* .
+
+:
+: Minimal valid promises:
+:
+cat > /var/cfengine/inputs/promises.cf <<'EOF'
+body common control
+{
+    bundlesequence => {
+        main,
+    };
+}
+
+bundle agent main
+{
+}
+EOF
+
+service cf-execd start && cf-agent -KI

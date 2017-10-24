@@ -1,0 +1,84 @@
+:
+: Minimal netboot environment:
+:
+
+zfs create -o mountpoint=/tftpboot -o dedup=on -o compression=lz4 -o atime=off zroot/tftpboot
+
+if ! grep 'zroot/tftpboot$' /etc/crontab; then
+    cat >> /etc/crontab <<'EOF'
+14 7 * * * root [ -x /root/bin/snapshot-mill ] && /root/bin/snapshot-mill 14 zroot/tftpboot
+EOF
+fi
+
+if ! grep '^# PXE-boot environment:$' /etc/rc.conf; then
+    cat >> /etc/rc.conf <<'EOF'
+
+#
+# PXE-boot environment:
+#
+nfs_server_enable="YES"    # /etc/exports
+inetd_enable="YES"         # /etc/inetd.conf there "#tftp"
+dhcpd_enable="YES"                       # dhcpd disabled on standby-system
+dhcpd_conf="/usr/local/etc/dhcpd.conf"   # configuration file
+dhcpd_ifaces="lagg0"                     # ethernet interface(s)
+EOF
+fi
+
+if ! grep -E '^/tftpboot[[:space:]]' /etc/exports; then
+    cat > /etc/exports <<'EOF'
+/tftpboot -ro -alldirs
+EOF
+fi
+
+if ! grep -E '^tftp[[:space:]]' /etc/inetd.conf; then
+    sed -e 's/^#\(tftp[[:space:]]\)/\1/' < /etc/inetd.conf > /etc/inetd.conf~
+    grep -E '^tftp[[:space:]]' /etc/inetd.conf~ && \
+        mv /etc/inetd.conf~ /etc/inetd.conf
+fi
+
+ASSUME_ALWAYS_YES=yes \
+    pkg install isc-dhcp43-server
+
+cat > /usr/local/etc/dhcpd.conf <<'EOF'
+subnet 10.4.1.0 netmask 255.255.255.0 {
+    range 10.4.1.250 10.4.1.251;
+    option subnet-mask 255.255.255.0;
+    option routers 10.4.1.8;
+    option broadcast-address 10.4.1.255;
+    option domain-name-servers 194.29.226.55, 194.29.230.55;
+    option domain-name "example.com";
+    next-server 10.4.1.10;
+    ### FreeBSD:
+    filename "FreeBSD/install/boot/pxeboot";
+    option root-path "10.4.1.10:/tftpboot/FreeBSD/install/";
+    ### SunOS:
+    #filename "boot/grub/pxegrub";
+}
+EOF
+
+ASSUME_ALWAYS_YES=yes \
+    pkg install ipmitool
+
+cat <<'EOF'
+#
+# Access to IPMI/yellow network:
+#
+ifconfig_igb0="inet 10.5.1.9/24"   # tools-1-b: ipmi-net-1-b
+ifconfig_igb0="inet 10.5.1.10/24"  # tools-2-b: ipmi-net-2-b
+#
+EOF
+
+cat <<'EOF'
+If IP-address of NFS-service changes, this has to be
+changed too:
+
+FreeBSD:
+
+  # chroot /tftpboot/FreeBSD/install/
+  chroot# vi etc/fstab
+  chroot# tar -c -v -f conf/base/etc.cpio.gz --format cpio --gzip etc
+
+SunOS:
+
+  # vi /tftpboot/boot/grub/menu.lst
+EOF

@@ -1,0 +1,118 @@
+:
+: Minimal collectd setup:
+:
+
+pkg install -y m4 help2man gmake texinfo rrdtool autoconf autoconf-wrapper
+pkg install -y libtoolize pkgconf
+
+cd /usr/ports/net-mgmt/collectd5/ && make config
+:
+: Select configuration option:
+: [X] rrdtool
+:
+cd /usr/ports/net-mgmt/collectd5 && make && make reinstall && make package
+
+cp work/pkg/collectd5*.txz /root 
+
+pkg lock -y collectd5
+
+cat > /usr/local/etc/collectd.conf <<'EOF'
+FQDNLookup   false
+BaseDir     "/var/db/collectd"
+PIDFile     "/var/run/collectd.pid"
+PluginDir   "/usr/local/lib/collectd"
+TypesDB     "/usr/local/share/collectd/types.db"
+
+LoadPlugin "logfile"
+LoadPlugin "network"
+
+<Plugin "network">
+  Listen "fd42:dc76:90a3:b::1:121"
+</Plugin>
+EOF
+
+pkg install -y daemontools
+mkdir -p /service /var/service
+grep '^svscan_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+svscan_enable="YES"
+EOF
+service svscan start
+
+mkdir -p /service/collectd-server/log
+cat > /service/collectd-server/log/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+exec multilog t .
+EOF
+chmod 755 /service/collectd-server/log/run
+
+chown -R daemon /var/db/collectd/
+
+cat > /service/collectd-server/run <<'EOF'
+#!/bin/sh
+PATH=/usr/bin:/bin
+
+program=/usr/local/sbin/collectd
+args='-f'
+user=daemon
+maxmemory=17179869184 # 16GB
+
+if [ -x $program ]; then
+    cd /
+    exec env - PATH=/usr/local/bin:/usr/bin:/bin \
+        setuidgid $user softlimit -m $maxmemory $program $args 2>&1
+else
+    sleep 300
+fi
+EOF
+chmod 755 /service/collectd-server/run
+
+cd /var/service && ln -s /service/collectd-server .
+
+:
+: On client:
+:
+pkg install -y collectd5
+
+:
+: Collectd Graph Panel:
+:
+
+cd /root && curl -O https://codeload.github.com/pommi/CGP/zip/master
+
+pkg install -y php71 php71-json php71-filter nginx-lite
+
+grep '^nginx_enable=' /etc/rc.conf || cat >> /etc/rc.conf <<'EOF'
+nginx_enable="YES"
+EOF
+grep '^php_fpm_enable=' /etc/rc.conf || cat >> /etc/rc.conf <<'EOF'
+php_fpm_enable="YES"
+EOF
+
+:
+: Quick hack to ignore ZFS snapshots in df-plugin:
+:
+cat <<'EOF'
+--- df.c	2017-06-06 20:13:54.000000000 +0200
++++ df.c	2017-06-16 18:14:23.000000000 +0200
+@@ -180,6 +180,11 @@
+     if (ignorelist_match(il_fstype, mnt_ptr->type))
+       continue;
+ 
++    char const *is_snapshot = "/.zfs/snapshot";
++
++    if (strstr(mnt_ptr->dir, is_snapshot))
++      continue;
++
+     /* search for duplicates *in front of* the current mnt_ptr. */
+     for (dup_ptr = mnt_list; dup_ptr != NULL; dup_ptr = dup_ptr->next) {
+       /* No duplicate found: mnt_ptr is the first of its kind. */
+EOF
+
+
+:
+: Debian client:
+:
+
+apt-get install -y collectd-core

@@ -1,0 +1,117 @@
+:
+: Minimal Nexenta setup:
+:
+: Inquire network and disk MAC/WWN/serial identifiers:
+:
+: storage-1-b internal disks:
+:   5000cca0:6d4e1865
+:   5000cca0:6d4f0a69
+:
+: ixgbe2 a0:36:9f:79:27:50
+: ixgbe3 a0:36:9f:79:27:52
+:
+: storage-2-b internal disks:
+:   5000cca0:6d4dce8d P5HBTJ5V
+:   5000cca0:6d4dd009 P5HBTM7V
+:
+: ixgbe2 a0:36:9f:79:27:34
+: ixgbe3 a0:36:9f:79:27:36
+:
+: storage-3-b internal disks:
+:   P5HDGLZV P5HDANUV
+:
+
+:
+: Nexenta addresses (no IPv6 in Nexentastor version 4):
+:
+10.4.1.60  storage-1-b
+10.4.1.61  storage-2-b
+10.4.1.63  storage-b   # Nexenta RSF-1 VIP
+
+# dladm show-phys
+LINK  DEVICE
+net0  ixgbe0
+net1  ixgbe1
+net2  ixgbe2 *
+net3  ixgbe3 *
+net4  igb0
+net5  igb1
+net6  igb2
+net7  igb3
+# dladm create-aggr -l net2 -l net3 aggr0
+# ipadm create-ip aggr0
+# ipadm create-addr -T static -a local=10.4.1.60 aggr0/storage-1-b
+
+# ipadm create-addr -T static -a local=10.4.1.61 aggr0/storage-2-b
+
+nmc# setup network interface ixgbe1
+     unconfigure
+nmc# setup network interface ixgbe2
+     unconfigure
+nmc# setup network aggregation create
+     ixgbe2 ixgbe3
+     L2,L3,L4
+nmc# setup network interface aggr1
+     static
+     mtu 9000
+nmc# setup network service snmp-agent                             
+     enable
+
+# cat /tftpboot/boot/grub/menu.lst
+default 0
+timeout 10
+title Nexenta PXE Installation
+    kernel$ /platform/i86pc/kernel/$ISADIR/unix -B iso_nfs_path=10.4.1.10:/tftpboot,atapi-cd-dma-enabled=0,atapi-other-dma-enabled=0
+    module$ /platform/i86pc/$ISADIR/miniroot
+
+# cat /usr/local/etc/dhcpd.conf
+subnet 10.4.1.0 netmask 255.255.255.0 {
+    range 10.4.1.250 10.4.1.251;
+    option subnet-mask 255.255.255.0;
+    option routers 10.4.1.8;
+    option broadcast-address 10.4.1.255;
+    option domain-name-servers 194.29.226.55, 194.29.230.55;
+    option domain-name "example.com";
+    next-server 10.4.1.10;
+    filename "boot/grub/pxegrub";
+}
+
+:
+: FreeBSD offline backup host storage-3-b:
+:
+
+# zpool create data mirror da{4,5} mirror da{6,7} mirror da{8,9} mirror da{10,11} spare da{12,13} 
+# zpool add data log mirror da{2,3}
+# zfs create data/var    
+# zfs create data/var/www
+# zfs set atime=off exec=off setuid=off data/var/www   (nexenta: devices=off)
+# zfs set dedup=on data/var/www
+# zfs set mountpoint=/volumes/data/var data/var
+
+# mkdir -p /volumes/data/var/www
+
+# cat /etc/exports 
+/data/var/www -maproot=0:0 -alldirs
+V4: / -sec=sys
+
+# tail -6 /etc/rc.conf
+nfs_server_enable="YES"
+nfs_server_flags="-n 64 -t -u"
+nfsv4_server_enable="YES"
+nfsuserd_enable="YES"
+nfsuserd_flags="-domain example.com"
+nfs_server_managegids="YES"
+
+:
+: On Debian clients:
+: (lookupcache=none ensures changes show up quickly on different client nodes)
+:
+# mount -v -t nfs4 \
+        -o soft,proto=tcp,timeo=150,retrans=1,sec=sys,lookupcache=none \
+           storage-3-b:/data/var/www /var/www
+
+
+------------------
+After License Key:
+------------------
+Web GUI port is: 8457/tcp

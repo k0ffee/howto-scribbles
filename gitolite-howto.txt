@@ -1,0 +1,101 @@
+:
+: Minimal Gitolite setup:
+:
+
+pkg install -y gitolite git daemontools
+
+grep '^svscan_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+svscan_enable="YES"
+EOF
+mkdir -p /service /var/service
+
+:
+: Edit
+: cf-engine/users.cf:
+:
+        git_1_b::
+            "group[git][gid]"   string => "965";
+            "user[git][uid]"    string => "965";
+            "user[git][group]"  string => "git";
+            "user[git][shell]"  string => "zsh";
+
+cp /home/tino.reinhardt/.ssh/authorized_keys /home/git/tino.reinhardt.pub
+chmod 644 /home/git/tino.reinhardt.pub
+su - git
+gitolite setup -pk tino.reinhardt.pub
+
+:
+: On client:
+:
+
+mkdir git; cd git
+git clone git@git-1-b:gitolite-admin
+cd gitolite-admin
+ls -R
+
+:
+: Adding repos:
+:
+
+git add .gitignore *
+git commit -m 'Initial commit'
+git remote add origin git@git-1-b:cf-private
+git push -u origin master
+
+:
+: Automatic exporter:
+:
+: git-1-b# cat gitolite-exporter.zsh
+:
+#! /usr/local/bin/zsh
+#
+# Gitolite-Exporter - pulls from one repo and pushes to another.
+#
+
+PATH=/usr/local/bin:/usr/bin:/bin
+set -eu
+
+function error {
+    print -r "Error: $@"; exit 1
+}
+
+home=/service/gitolite-exporter
+typeset -x GIT_SSH
+GIT_SSH="$home/git-ssh-wrapper/run"
+mkdir -p "$home/data"
+
+repositories=(cf-public cf-masterfiles)
+remote=git@gitlab.example.com:infrastructure
+pause=1280  # seconds
+
+{
+    for name in $repositories; do
+        cd -- "$home/data"
+        [[ -d $name ]] || git clone "git@git-1-b:$name"
+        if cd -- "$home/data/$name"; then
+            #
+            # Here comes the dirty hack:
+            #
+            case $name in
+                (cf-public) _name=cfengine-publicfiles ;;
+                (cf-masterfiles) _name=cfengine-masterfiles ;;
+            esac
+            git pull -f origin master
+            git remote | grep '^gitlab$' || \
+                git remote add gitlab $remote/${_name}.git
+            git config --local user.name "Gitolite Exporter"
+            git config --local user.email "tino.reinhardt@example.com"
+            git push -f -u gitlab master
+            git remote rm gitlab
+        fi
+    done
+} 2>&1 | grep -vF "Could not create directory '/nonexistent/.ssh'."
+
+sleep $pause
+
+:
+: git-1-b# cat git-ssh-wrapper/run 
+:
+#!/bin/sh
+exec ssh -C -i /service/gitolite-exporter/git-ssh-wrapper/id_rsa "$@"

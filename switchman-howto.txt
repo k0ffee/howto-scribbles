@@ -1,0 +1,52 @@
+:
+: Minimal switchman setup:
+:
+
+git clone https://github.com/komarov/switchman
+mv lib/App /etc/perl
+apt-get install libjson-perl
+curl -O https://cpan.metacpan.org/authors/id/C/CK/CKERNER/Linux-MemInfo-0.03.tar.gz
+perl Makefile.PL
+apt-get install liblist-moreutils-perl
+apt-get install liblog-dispatch-perl
+apt-get install libmoo-perl
+curl -O https://cpan.metacpan.org/authors/id/M/MA/MAF/Net-ZooKeeper-0.41.tar.gz
+apt-get install gcc
+apt-get install libzookeeper-mt-dev 
+perl Makefile.PL
+curl -O https://cpan.metacpan.org/authors/id/K/KO/KOMAROV/Net-ZooKeeper-Semaphore-0.02.tar.gz
+perl Makefile.PL
+curl -O https://cpan.metacpan.org/authors/id/T/TA/TADAM/Net-ZooKeeper-Lock-0.03.tar.gz 
+perl Makefile.PL
+apt-get install libsys-cpu-perl
+curl -O https://cpan.metacpan.org/authors/id/M/MI/MIKER/Sys-Hostname-FQDN-0.12.tar.gz
+perl Makefile.PL
+apt-get install libsys-sigaction-perl
+
+/etc/switchman.conf
+{
+    "prefix":"/staging/switchman",
+    "zkhosts":"zoo-1-dev:2181,zoo-2-dev:2181,zoo-3-dev:2181",
+    "loglevel":"info",
+    "logfile":"/var/log/switchman.log"
+}
+
+:
+: In zookeepoer:
+: (-> Input; <- Output)
+:
+
+# cli_mt zoo-1-b:2181
+-> create /prod-b
+<- Creating [/prod-b] node
+<- [/prod-b]: rc = 0
+<-         name = /prod-b
+-> create /prod-b/switchman
+<- Creating [/prod-b/switchman] node
+<- [/prod-b/switchman]: rc = 0
+<-         name = /prod-b/switchman
+-> set /prod-b/switchman {}
+-> ls /
+<- /: rc = 0
+<-         prod-b
+<-         zookeeper

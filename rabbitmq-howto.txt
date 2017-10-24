@@ -1,0 +1,42 @@
+:
+: Minimal RabbitMQ setup:
+:
+
+ASSUME_ALWAYS_YES=yes \
+    pkg install rabbitmq
+
+grep '^rabbitmq_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+rabbitmq_enable="YES"
+EOF
+
+cookie=/var/db/rabbitmq/.erlang.cookie
+print -n EXAMPLEBODZEXAMPLEMH > $cookie
+chown rabbitmq:rabbitmq $cookie
+chmod 600 $cookie
+
+cat > /usr/local/etc/rabbitmq/rabbitmqadmin.conf <<'EOF'
+[default]
+ssl = False
+port = 15672
+EOF
+
+cat <<'EOF'
+    # rabbitmqctl stop_app
+    # rabbitmqctl join_cluster rabbit@rabbit-1-b
+    # rabbitmqctl start_app
+    #
+    # rabbitmqctl add_vhost production
+    # rabbitmqctl set_policy ha-all ".*" '{"ha-mode":"all"}' -p production
+    # rabbitmqctl delete_user guest
+    # rabbitmqctl add_user api_p exampleexampleexample
+    # rabbitmqctl set_permissions -p production api_p ".*" ".*" ".*"
+    # rabbitmqctl add_user backend_p example2xample2xample
+    # rabbitmqctl set_permissions -p production backend_p ".*" ".*" ".*"
+    # rabbitmqctl add_user nagios example3xample3xample
+    # rabbitmqctl set_permissions -p production nagios "" "" ".*"
+    # rabbitmqctl set_user_tags nagios monitoring
+    #
+    # rabbitmq-plugins enable rabbitmq_management
+EOF

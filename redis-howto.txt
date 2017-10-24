@@ -1,0 +1,75 @@
+:
+: Minimal Redis cluster setup:
+:
+
+ASSUME_ALWAYS_YES=yes \
+    pkg install redis daemontools rubygem-redis
+
+mkdir -p /service /var/service
+
+grep '^svscan_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+svscan_enable="YES"
+EOF
+
+for i in 0 1 2; do
+    mkdir -p /service/redis-700$i/log /var/db/redis/700$i \
+        /usr/local/etc/redis
+    chown redis:redis /var/db/redis/700$i
+    run=/service/redis-700$i/run
+    log=/service/redis-700$i/log/run
+    cat > $log <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+exec multilog t .
+EOF
+    chmod 755 $log
+    cat > $run <<EOF
+#!/bin/sh
+exec 2>&1
+PATH=/usr/bin
+set -eu
+
+port=700$i
+maxfiles=32768
+conf=/usr/local/etc/redis/redis-\$port.conf
+dir=/var/db/redis/\$port
+user=redis
+
+ulimit -n \$maxfiles
+cd \$dir && \\
+    exec env - PATH=/usr/local/bin setuidgid \$user redis-server \$conf
+EOF
+    chmod 755 $run
+
+    cat > "/usr/local/etc/redis/redis-700$i".conf <<EOF
+bind 0.0.0.0
+port 700$i
+daemonize no
+maxclients 32736
+maxmemory 12884901888
+
+cluster-enabled yes
+cluster-config-file nodes.conf
+cluster-node-timeout 5000
+appendonly yes
+dir /var/db/redis/700$i
+EOF
+    cd /var/service && ln -fs /service/redis-700$i .
+done
+
+cat <<'EOF'
+    # I'm keeping this for copy-paste here:
+    # Redis needs IP adresses.
+    #
+    # ./redis-trib.rb create --replicas 2 \
+    #   10.4.1.15:7000 10.4.1.15:7001 10.4.1.15:7002 \
+    #   10.4.1.16:7000 10.4.1.16:7001 10.4.1.16:7002 \
+    #   10.4.1.17:7000 10.4.1.17:7001 10.4.1.17:7002
+EOF
+
+:
+: For munin plugins:
+:
+pkg install -y p5-Switch

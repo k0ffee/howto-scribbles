@@ -1,0 +1,44 @@
+:
+: Minimal Nagios client setup:
+:
+: On client:
+:
+
+pkg install -y nrpe-ssl
+
+grep '^nrpe2_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+nrpe2_enable="YES"
+EOF
+
+allowed_hosts="nagios-1-b,nagios-2-b"
+sed "s/\\(^allowed_hosts=\\).*/\1$allowed_hosts/" \
+    /usr/local/etc/nrpe.cfg > /usr/local/etc/nrpe.cfg~ && \
+        mv /usr/local/etc/nrpe.cfg~ /usr/local/etc/nrpe.cfg
+
+server_address=`hostname`
+sed "s/^#*\\(server_address=\\).*/\1$server_address/" \
+    /usr/local/etc/nrpe.cfg > /usr/local/etc/nrpe.cfg~ && \
+        mv /usr/local/etc/nrpe.cfg~ /usr/local/etc/nrpe.cfg
+
+service nrpe2 start
+
+[[ -f /etc/debian_version ]] && cat <<'EOF'
+:
+: On Debian:
+:
+apt-get update >/dev/null && apt-get install -y nagios-nrpe-server
+
+allowed_hosts="nagios-1-b,nagios-2-b"
+sed "s/\\(^allowed_hosts=\\).*/\1$allowed_hosts/" \
+    /etc/nagios/nrpe.cfg > /etc/nagios//nrpe.cfg~ && \
+        mv /etc/nagios/nrpe.cfg~ /etc/nagios/nrpe.cfg
+
+server_address=`hostname`
+sed "s/^#*\\(server_address=\\).*/\1$server_address/" \
+    /etc/nagios/nrpe.cfg > /etc/nagios/nrpe.cfg~ && \
+        mv /etc/nagios/nrpe.cfg~ /etc/nagios/nrpe.cfg
+
+service nagios-nrpe-server restart
+EOF

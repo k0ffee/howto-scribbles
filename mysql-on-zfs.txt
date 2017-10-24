@@ -1,0 +1,172 @@
+:
+: MySQL on ZFS:
+:
+
+:
+: Rotating 8TB disk performance:
+: Striped mirror (42TB) much faster on write
+: than 12 disk raidz2 (70TB).
+:
+
+zpool create bigdata mirror da{1,2} mirror da{3,4} mirror da{5,6} \
+    mirror da{7,8} mirror da{9,10} mirror da{11,12}
+
+zfs create -o recordsize=16k bigdata/data
+zfs create -o recordsize=128k bigdata/logs
+zfs set logbias=throughput bigdata/data
+zfs set primarycache=metadata bigdata/data
+zfs set logbias=latency bigdata/logs
+zfs set primarycache=metadata bigdata/logs
+
+:
+: Edit my.cnf:
+:
+innodb_doublewrite = off
+
+:
+: Edit
+: FreeBSD /etc/sysctl.conf:
+:
+#
+# Let MySQL do its prefetching itself:
+#
+vfs.zfs.prefetch_disable="1"
+#
+# MySQL autosizes this queue as:
+#     50 + (max_connections / 5)
+#
+kern.ipc.soacceptqueue="1024"
+
+:
+: Edit FreeBSD
+: /boot/loader.conf:
+:
+vfs.zfs.arc_max="16G"
+hw.mfi.mrsas_enable="1"
+
+pkg install percona56-server
+pkg install /root/p5-DBD-mysql-4.037.txz qpress xtrabackup
+pkg lock -y p5-DBD-mysql
+
+# /usr/ports/databases/p5-DBD-mysql:
+#BUILD_DEPENDS=	p5-DBI>=1.08:databases/p5-DBI \
+#		percona56-client>=5.6:databases/percona56-client
+#...
+#USES=		perl5
+
+mkdir -p /usr/local/etc/mysql
+chown -R mysql:mysql /var/db/mysql*
+mysql_install_db --defaults-extra-file=/usr/local/etc/mysql/my.cnf \
+    --user=mysql --datadir=/var/db/mysql --basedir=/usr/local
+
+:
+: Snapshot-backups:
+:     myisam:
+:         - flush tables;
+:         - flush tables with read lock;
+:         - chok slave-open-temp-tables = 0;
+:
+
+:
+: db-{9,10}-b and db-{1,2}-b circular replication:
+:
+
+mysql_secure_installation
+
+mkdir -p /usr/local/etc/mysql/ssl && cd /usr/local/etc/mysql/ssl
+
+: openssl genrsa 4096 > ca-key.pem
+: openssl req -new -x509 -nodes -days 3600 \
+:    -key ca-key.pem -out ca.pem
+
+openssl req -newkey rsa:4096 -days 3600 \
+   -nodes -keyout server-key.pem -out server-req.pem
+openssl rsa -in server-key.pem -out server-key.pem
+openssl x509 -req -in server-req.pem -days 3600 \
+   -CA ca.pem -CAkey ca-key.pem -set_serial 01 -out server-cert.pem
+
+openssl req -newkey rsa:4096 -days 3600 \
+   -nodes -keyout client-key.pem -out client-req.pem
+openssl rsa -in client-key.pem -out client-key.pem
+openssl x509 -req -in client-req.pem -days 3600 \
+   -CA ca.pem -CAkey ca-key.pem -set_serial 01 -out client-cert.pem
+
+chown root:wheel *
+chmod a-w *
+chmod 400 ca-key.pem 
+chmod 440 client-key.pem server-key.pem 
+chown root:mysql client-key.pem server-key.pem
+
+drop user 'replication'@'%';
+create user 'replication'@'%'   identified by 'Example1';
+grant replication slave  on *.* to 'replication'@'%' require ssl;
+create user 'haproxy'@'%'       identified by 'Example2';
+grant replication client on *.* to 'haproxy'@'%';
+create user 'nagios'@'%'        identified by 'Example3';
+grant replication client on *.*      to 'nagios'@'%';
+grant select on performance_schema.* to 'nagios'@'%';
+create user 'munin'@'localhost' identified by 'Example4';
+grant process, replication client on *.* to 'munin'@'localhost';
+grant select on mysql.*                  to 'munin'@'localhost';
+flush privileges;
+
+flush tables with read lock;
+show master status;
+unlock tables;
+
+change master to MASTER_HOST='db-7-b',
+    MASTER_USER='replication',
+    MASTER_PASSWORD='Example1',
+    MASTER_SSL=1,
+    MASTER_SSL_CERT='/usr/local/etc/mysql/ssl/client-cert.pem',
+    MASTER_SSL_KEY='/usr/local/etc/mysql/ssl/client-key.pem',
+    MASTER_SSL_CA='/usr/local/etc/mysql/ssl/ca.pem',
+    MASTER_SSL_VERIFY_SERVER_CERT=1,
+    MASTER_LOG_FILE='bin-server-7.000005',
+    MASTER_LOG_POS=204;
+
+:
+: HAproxy middleware:
+:
+
+pkg install -y daemontools
+
+mkdir -p /service /var/service
+
+grep '^svscan_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+svscan_enable="YES"
+EOF
+
+dir=/service/mysql-test
+mkdir -p $dir/log
+cat > $dir/log/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+exec multilog t .
+EOF
+
+cat > $dir/run <<'EOF'
+#!/bin/sh
+
+exec 2>&1
+PATH=/usr/bin
+set -eu
+
+name=mysql-test
+uid=www
+maxmemory=1073741824
+maxfiles=256
+
+exec env - PATH=.:/usr/local/bin softlimit -m $maxmemory -o $maxfiles \
+    setuidgid $uid $name
+EOF
+
+chmod 755 $dir/run $dir/log/run
+cd /var/service && ln -fs $dir .
+
+:
+: For Munin:
+:
+pkg install -y p5-Module-Pluggable

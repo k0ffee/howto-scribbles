@@ -1,0 +1,54 @@
+:
+: Minimal Riak setup:
+:
+
+:
+: On FreeBSD:
+:
+
+pkg install riak2 openjdk8
+vi /usr/local/etc/riak/riak.conf
+cat >> /etc/rc.conf <<'EOF'
+
+riak_enable="YES"
+
+:
+: Edit
+: /usr/local/etc/riak/riak.conf
+:
+nodename = riak-{1,2,3}-dev
+storage_backend = leveldb
+distributed_cookie = riak-p1
+listener.http.internal = 0.0.0.0:8098
+listener.protobuf.internal = 0.0.0.0:8087
+search = on
+
+:
+: Join cluster:
+:
+
+# ssh riak-2-dev
+riak-2-dev# riak-admin cluster status
+riak-2-dev# riak-admin cluster join riak-1-dev@riak-1-dev.local
+riak-2-dev# exit
+# ssh riak-3-dev
+riak-3-dev# riak-admin cluster join riak-1-dev@riak-1-dev.local
+riak-3-dev# riak-admin cluster plan
+riak-3-dev# riak-admin cluster commit
+riak-3-dev# riak-admin cluster status
+
+:
+: On Debian:
+:
+apt-get update
+apt-get install zsh nvi less
+zsh
+apt-get upgrade
+apt-get install curl
+curl -sO https://packagecloud.io/install/repositories/basho/riak/script.deb.sh
+less script.deb.sh
+bash script.deb.sh
+vi /etc/apt/sources.list.d/basho_riak.list
+    # there: s/jessie/wheezy/ if no jessie-package.
+apt-get update
+apt-get install riak

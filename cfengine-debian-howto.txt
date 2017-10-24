@@ -1,0 +1,67 @@
+:
+: Minimal Cfengine client setup on Debian:
+:
+apt-get -q update && apt-get install nvi zsh less
+
+apt-get install -y liblmdb-dev libssl-dev libpcre3-dev libpam-dev curl
+apt-get install -y daemontools daemontools-run
+
+cd / && tar xf /root/cf.tar
+rm -f /var/cfengine/ppkeys/localhost.*
+
+print fd42:dc76:90a3:b::1:89 > /var/cfengine/policy_server.dat
+/var/cfengine/bin/cf-key
+/var/cfengine/bin/cf-key -p /var/cfengine/ppkeys/localhost.pub 
+cat /var/cfengine/ppkeys/localhost.pub
+hostname
+
+cat > /var/cfengine/ppkeys/root-MD5=d41d8cd98f00b204e9800998ecf8427e.pub <<'EOF'
+MD5=d41d8cd98f00b204e9800998ecf8427e
+-----BEGIN RSA PUBLIC KEY-----
+[...]
+-----END RSA PUBLIC KEY-----
+cfengine-1-b
+EOF
+
+:
+: Minimal valid promises:
+:
+cat > /var/cfengine/inputs/promises.cf <<'EOF'
+body common control
+{
+    bundlesequence => {
+        main,
+    };
+}
+
+bundle agent main
+{
+}
+EOF
+
+mkdir -p /etc/service /var/lib/supervise/cf-execd/log
+cat > /var/lib/supervise/cf-execd/log/run <<'EOF'
+#!/bin/sh
+PATH=/usr/bin
+exec multilog t .
+EOF
+
+cat > /var/lib/supervise/cf-execd/run <<'EOF'
+#!/bin/sh
+PATH=/usr/bin:/bin
+
+program=/var/cfengine/bin/cf-execd
+args="-F"
+maxmemory=17179869184
+
+if [ -x $program ]; then
+    exec env - PATH=/var/cfengine/bin:/usr/sbin:/sbin:/usr/bin:/bin \
+        softlimit -m $maxmemory $program $args 2>&1
+else
+    sleep 120
+fi
+EOF
+
+chmod 755 /var/lib/supervise/*/run /var/lib/supervise/*/log/run
+ln -fs /var/lib/supervise/* /etc/service/
+/var/cfengine/bin/cf-agent -KI

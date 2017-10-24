@@ -1,0 +1,55 @@
+:
+: Minimal Munin setup:
+:
+
+ASSUME_ALWAYS_YES=yes \
+    pkg install -y munin-master daemontools nginx p5-CGI-Fast spawn-fcgi
+
+mkdir -p /service /var/service
+
+grep '^svscan_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+svscan_enable="YES"
+EOF
+grep '^nginx_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+nginx_enable="YES"
+EOF
+
+dir=/service/munin-cgi-graph
+mkdir -p $dir/log
+cat > $dir/log/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+exec multilog t .
+EOF
+
+cat > $dir/run <<'EOF'
+#!/bin/sh
+PATH=/usr/bin
+
+socket=/var/run/munin/fastcgi-graph.sock
+program=/usr/local/www/cgi-bin/munin-cgi-graph
+
+www_user=www
+munin_user=munin
+
+if [ -x $program ]; then
+    [ -r $socket ] && rm $socket  # sometimes stale socket is left behind.
+    exec env - PATH=/usr/local/bin spawn-fcgi -n -s $socket \
+        -U $www_user -u $munin_user -g $munin_user $program 2>&1
+fi
+EOF
+
+chmod 755 $dir/run $dir/log/run
+cd /var/service && ln -fs $dir .
+
+chown munin:www /var/munin/cgi-tmp
+
+cat > /etc/newsyslog.conf.d/nginx <<'EOF'
+/var/log/nginx/*.log 644 7 * $D0 BGX /var/run/nginx.pid SIGUSR1
+EOF
+
+cat > /usr/local/etc/nginx/nginx.conf <<EOF
+EOF

@@ -1,0 +1,28 @@
+:
+: Minimal zookeeper setup:
+:
+
+pkg install zookeeper
+
+cat >/usr/local/etc/zookeeper/zoo.cfg <<'EOF'
+tickTime=2000
+initLimit=10
+syncLimit=5
+dataDir=/var/db/zookeeper
+clientPort=2181
+#
+# Specify all zookeeper servers.
+# The fist port is used by followers to connect to the leader
+# The second one is used for leader election
+#
+server.1=zoo-1-b:2888:3888
+server.2=zoo-2-b:2888:3888
+server.3=zoo-3-b:2888:3888
+EOF
+
+:
+: Edit
+: /var/db/zookeeper/myid
+:
+
+# print stat | nc zoo-1-b 2181

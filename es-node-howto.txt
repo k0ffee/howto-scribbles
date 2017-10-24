@@ -1,0 +1,104 @@
+:
+: Minimal Elasticsearch cluster setup:
+:
+: In host system make sure "enforce_statfs = 1" is set in jail.conf.
+: This is needed by Java VM.
+:
+
+ASSUME_ALWAYS_YES=yes \
+    pkg install curl \
+                elasticsearch \
+                elasticsearch-plugin-head
+    :
+    : To be added:
+    :
+    : elasticsearch-analysis-combo
+    : elasticsearch-analysis-icu
+
+:
+: "write_consistency: one" is up for discussion.
+: Do we favour consistency or availability.
+:
+name=`hostname`
+cat > /usr/local/etc/elasticsearch/elasticsearch.yml <<EOF
+action:
+  write_consistency: one
+cluster:
+  name: example
+discovery:
+  zen:
+    ping:
+      multicast:
+        enabled: false
+      unicast:
+        hosts:
+             - es-1-b
+             - es-2-b
+             - es-3-b
+index:
+  number_of_replicas: 2
+node:
+  name: $name
+path:
+  conf: /usr/local/etc/elasticsearch
+  data: /data
+  logs: /var/log/elasticsearch
+EOF
+
+mkdir -p /var/log/elasticsearch
+chown -R elasticsearch:elasticsearch /var/log/elasticsearch
+mkdir -p /data
+chown -R elasticsearch:elasticsearch /data
+
+grep -i '^elasticsearch_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+elasticsearch_enable="YES"
+elasticsearch_max_mem="32g"
+EOF
+
+:
+: For elasticsearch 1.7:
+:
+cd /usr/local/lib/elasticsearch && \
+    elasticsearch-plugin -l | grep ' analysis-icu$' || \
+        elasticsearch-plugin -i elasticsearch/elasticsearch-analysis-icu/2.7.0
+
+cd /usr/local/lib/elasticsearch && \
+    elasticsearch-plugin -l | grep ' analysis-combo$' || \
+        elasticsearch-plugin -i \
+            com.yakaz.elasticsearch.plugins/elasticsearch-analysis-combo/1.5.1
+
+:
+: Monit:
+:
+
+pkg install -y monit
+
+cat > /usr/local/etc/monitrc <<'EOF'
+set daemon 10 with start delay 30
+set logfile syslog
+set statefile /var/.monit.state
+
+check process java with pidfile /var/run/elasticsearch.pid
+    start program = "/bin/sh -c '
+                     pkill -CONT java
+                     service elasticsearch start'"
+    stop program =  "/bin/sh -c '
+                     pkill -CONT java
+                     [ -f /var/run/elasticsearch.pid ] && \
+                         kill -TERM `cat /var/run/elasticsearch.pid`
+                     service elasticsearch stop'"
+    if failed port 9200 protocol HTTP
+        request /
+        with timeout 30 seconds
+        then restart
+EOF
+
+chmod 600 /usr/local/etc/monitrc
+
+grep '^monit_enable=' /etc/rc.conf || \
+cat >> /et/rc.conf <<'EOF'
+
+monit_enable="YES"
+EOF

@@ -1,0 +1,130 @@
+:
+: Minimal Graylog setup:
+:
+
+pkg install -y redis
+
+sed -e 's/^bind .*/bind 0.0.0.0/' /usr/local/etc/redis.conf \
+    > /usr/local/etc/redis.conf~
+mv /usr/local/etc/redis.conf~ /usr/local/etc/redis.conf
+
+grep '^redis_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+redis_enable="YES"
+EOF
+service redis start
+
+pkg install -y graylog mongodb ruby
+pkg install -y daemontools logstash socat
+
+grep '^graylog_enable='  /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+graylog_enable="YES"
+EOF
+grep '^mongod_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+mongod_enable="YES"
+EOF
+
+service graylog start
+service mongod start
+
+sh /usr/local/logstash/bin/logstash-plugin install logstash-filter-prune
+
+dir=/service/logstash
+mkdir -p $dir/log
+cat > $dir/log/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+exec multilog t .
+EOF
+
+cat > $dir/run <<'EOF'
+#!/bin/sh
+PATH=/usr/bin:/bin
+
+program=/usr/local/logstash/bin/logstash
+args='agent -f /usr/local/etc/logstash/logstash.conf'
+user=daemon
+maxmemory=17179869184
+
+if [ -x $program ]; then
+    exec env - PATH=/usr/local/bin:/usr/bin:/bin \
+        setuidgid $user softlimit -m $maxmemory $program $args 2>&1
+else
+    sleep 300
+fi
+EOF
+
+chmod 755 $dir/run $dir/log/run
+
+chmod 640 /usr/local/etc/logstash/ssl/*
+chgrp daemon /usr/local/etc/logstash/ssl/*
+grep '^svscan_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+svscan_enable="YES"
+EOF
+mkdir -p /var/service && service svscan start
+cd /var/service && ln -fs /service/logstash .
+
+for dir in socat-tcp-proxy socat-udp-proxy \
+           socat-tcp6-proxy socat-udp6-proxy; do
+mkdir -p /service/$dir/log
+cat > /service/$dir/log/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+exec multilog t .
+EOF
+done
+
+cat > /service/socat-tcp-proxy/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+
+incoming_port=514
+outgoing_port=5514
+user=nobody
+
+exec socat TCP4-LISTEN:$incoming_port,su=$user,reuseaddr,fork \
+  TCP6:::1:$outgoing_port
+EOF
+
+cat > /service/socat-tcp6-proxy/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+
+incoming_port=514
+outgoing_port=5514
+user=nobody
+
+exec socat TCP6-LISTEN:$incoming_port,su=$user,reuseaddr,fork \
+  TCP6:::1:$outgoing_port
+EOF
+
+cat > /service/socat-udp-proxy/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+
+incoming_port=514
+outgoing_port=5514
+user=nobody
+
+exec socat UDP4-LISTEN:$incoming_port,su=$user,reuseaddr,fork \
+  UDP6:::1:$outgoing_port
+EOF
+
+cat > /service/socat-udp6-proxy/run <<'EOF'
+#!/bin/sh
+PATH=/usr/local/bin
+
+incoming_port=514
+outgoing_port=5514
+user=nobody
+
+exec socat UDP6-RECVFROM:$incoming_port,su=$user,reuseaddr,fork \
+  UDP6:::1:$outgoing_port
+EOF
+
+chmod 755 /service/*/run /service/*/log/run
+ln -sf /service/* /var/service/

@@ -1,0 +1,91 @@
+:
+: Minimal Graylog-Elasticsearch:
+:
+: On graylog-es host node:
+:
+:   tools-2-b# zpool create data da{2..5}      
+:   tools-2-b# zfs create \
+:     -o mountpoint=/jails/graylog-es-2-b/data \
+:     -o dedup=on -o compression=lz4 -o atime=off \
+:     -o primarycache=metadata data/graylog-es-2-b
+:   
+
+pkg install -y elasticsearch2 curl monit munin-node ruby
+chown elasticsearch:elasticsearch /data
+
+:
+: Add munin elasticsearch-plugin.
+: Add to munin-node.conf:
+:   allow fd42:dc76:90a3:b::1:66 # munin-1-b # jail
+:   allow 10.4.1.66              # munin-1-b # jail
+:   allow fd42:dc76:90a3:b::1:67 # munin-2-b # jail
+:   allow 10.4.1.67              # munin-2-b # jail
+:
+
+grep '^munin_node_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+
+munin_node_enable="YES"
+EOF
+grep '^monit_enable=' /etc/rc.conf || \
+    cat >> /etc/rc.conf <<'EOF'
+monit_enable="YES"
+EOF
+
+cat > /usr/local/etc/monitrc <<'EOF'
+set daemon 10 with start delay 30
+set logfile syslog
+set statefile /var/.monit.state
+
+check process es with pidfile /var/run/elasticsearch.pid
+    start program = "/bin/sh -c '
+                     pkill -CONT java
+                     pkill java  # old workers might still hang around
+                     service elasticsearch start'"
+    stop program =  "/bin/sh -c '
+                     pkill -CONT java
+                     service elasticsearch stop'"
+    if failed port 9200 protocol HTTP
+        request /
+        with timeout 30 seconds
+        then restart
+EOF
+chmod 600 /usr/local/etc/monitrc
+
+name=`hostname`
+cat > /usr/local/etc/elasticsearch/elasticsearch.yml <<EOF
+action:
+  write_consistency: one
+cluster:
+  name: graylog
+discovery:
+  zen:
+    ping:
+      multicast:
+        enabled: false
+      unicast:
+        hosts:
+             - graylog-es-1-b
+             - graylog-es-2-b
+index:
+  number_of_replicas: 1
+node:
+  name: $name
+network:
+  host: $name
+path:
+  conf: /usr/local/etc/elasticsearch
+  data: /data
+  logs: /var/log/elasticsearch
+EOF
+
+grep '^elasticearch_enable=' /etc/rc.conf || \
+  cat >> /etc/rc.conf <<'EOF'
+
+elasticsearch_enable="YES"
+elasticsearch_max_mem="32g"
+EOF
+
+service monit start
+service elasticsearch start
+service munin-node start

@@ -1,0 +1,23 @@
+:
+: Minimal central HAproxy setup:
+:
+
+ASSUME_ALWAYS_YES=yes \
+    pkg install haproxy monit
+
+:
+: Edit:
+: /usr/local/etc/monitrc
+: /usr/local/etc/haproxy.conf
+: /etc/rc.conf
+:
+
+:
+: For munin haproxy_ add:
+:
+: /usr/local/etc/munin/plugin-conf.d/haproxy.conf
+: /usr/local/etc/munin/plugins/haproxy_9001
+: /usr/local/etc/munin/plugins/haproxy_9002
+: /usr/local/etc/munin/plugins/haproxy_9003
+: /usr/local/lib/perl5/site_perl/Munin/Plugin/HTTP.pm
+:
