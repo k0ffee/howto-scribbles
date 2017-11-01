@@ -1,0 +1,577 @@
+:
+: Juniper configuration notes:
+:
+
+For cli-shell type "cli".
+Type "quit" to exit.
+
+:
+: Manual NTP setup:
+:
+root@juniper-1-b# set system ntp boot-server 10.5.1.9
+root@juniper-1-b# set system ntp server 10.5.1.9
+root@juniper-1-b# set system ntp server 10.5.1.10
+root@juniper-1-b# show system ntp 
+boot-server 10.5.1.9;
+server 10.5.1.9;
+server 10.5.1.10;
+
+root@juniper-1-b> show ntp associations    
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
++10.5.1.9        78.46.253.198    3 -   33   64    7    0.285  -15.424   1.083
+*10.5.1.10       213.172.105.106  3 -   30   64   17    0.303  -16.266   1.759
+
+:
+: Inspect alarm status:
+:
+
+show system alarms
+show virtual-chassis
+
+root@juniper-1-b> show chassis alarms 
+5 alarms currently active
+Alarm time               Class  Description
+2015-04-10 05:01:35 CEST Major  FPC 3 Fan 3 not spinning
+2015-04-10 05:00:25 CEST Major  FPC 2 PEM 1 is not powered
+2015-04-10 03:01:27 CEST Major  FPC 3 PEM 1 is not powered
+2015-04-10 02:59:25 CEST Major  FPC 1 PEM 1 is not powered
+2015-04-10 02:59:21 CEST Major  FPC 0 PEM 1 is not powered
+
+:
+: Switch to other virtual chassis member:
+:
+  cli> request session member ?
+  cli> request session member 1
+
+:
+: Configure management interface:
+:
+
+  cli> set interfaces vme unit 0 family inet address 10.5.1.3
+
+:
+: Change system password:
+:
+
+  [edit groups global system]
+  root@juniper-1-b# set root-authentication plain-text-password
+  New Password: type password here
+  Retype new password: retype password here
+
+:
+: Manual SNMP setup:
+:
+  set snmp community public authorization read-only
+  set snmp client-list list0 10.5.1.0/24
+  set snmp community public client-list-name list0
+
+  set snmp trap-group nagios targets 10.5.1.9   # nagios-1-b
+  set snmp trap-group nagios targets 10.5.1.10  # nagios-2-b
+  set snmp trap-group nagios categories chassis configuration authentication 
+
+:
+: Inspecting the whole SNMP tree:
+: (This wil be slow for fetching the whole tree.)
+:
+nagios-1-b# snmpwalk -v 2c -c public juniper-1-b 1
+
+:
+: Virtual chassis management:
+:
+: Shifting master, backup, linecards around:
+:
+
+  show virtual chassis
+
+  #
+  # Now raise or lower priority:
+  #
+
+  set virtual-chassis member 2 mastership-priority 127 
+  commit syncronize
+
+  #
+  # Now watch balance changing:
+  #
+
+  show virtual chassis
+
+  #
+  # After desired balance is reached: delete interim weight:
+  #
+
+  delete virtual-chassis member 2 mastership-priority
+  commit syncronize
+
+  #
+  # As seen from backside of rack (hot row):
+  #
+  #       Rack 2         Rack 1
+  #  .------------------..------------------.
+  #  | LY0215524498 (3) || LY0215524512 (1) |
+  #  | LY0215524535 (2) || LY0215524538 (0) |
+  #  `------------------''------------------'
+  #
+
+:
+: Saving configuration for backup/rollback:
+:
+
+  root@juniper-1-b> request system configuration rescue save 
+  root@juniper-1-b# save juniper-1-b-20160510.txt 
+
+: ------------------------------------------------------------------------ :
+
+:
+: VLAN setup:
+:
+:
+: - Have 3 VLANs:
+:
+:   * white-1 (public Internet, Rack 1, untagged)
+:     members: ipb-cable-1
+:              nginx-gateway gw-3-b (CARP), nginx-gateway gw-4-b (CARP)
+:   * white-2 (public Internet, Rack 2, untagged)
+:     members: ipb-cable-2
+:              ssh-gateway gw-1-b (CARP), ssh-gateway gw-2-b (CARP)
+:   * orange  (internal trusted network, untagged)
+:
+
+:
+:  Inspect ARP-table:
+:
+
+  # show ethernet-switching table
+
+:
+: On master-switch in rack 1:
+:
+
+  set vlans white-1
+  set vlans white-2
+
+  delete interfaces xe-0/0/0
+  delete interfaces xe-0/0/1
+  delete interfaces xe-0/0/2
+  delete interfaces xe-1/0/0
+  delete interfaces xe-1/0/1
+  delete interfaces xe-1/0/2
+  delete interfaces xe-2/0/0
+  delete interfaces xe-2/0/1
+  delete interfaces xe-2/0/2
+  delete interfaces xe-3/0/0
+  delete interfaces xe-3/0/1
+  delete interfaces xe-3/0/2
+
+  set interfaces xe-0/0/0 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-0/0/1 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-0/0/2 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-1/0/0 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-1/0/1 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-1/0/2 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-2/0/0 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-2/0/1 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-2/0/2 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-3/0/0 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-3/0/1 unit 0 family ethernet-switching vlan members white-1
+  set interfaces xe-3/0/2 unit 0 family ethernet-switching vlan members white-1
+
+  delete interfaces xe-0/0/3
+  delete interfaces xe-0/0/4
+  delete interfaces xe-0/0/5
+  delete interfaces xe-1/0/3
+  delete interfaces xe-1/0/4
+  delete interfaces xe-1/0/5
+  delete interfaces xe-2/0/3
+  delete interfaces xe-2/0/4
+  delete interfaces xe-2/0/5
+  delete interfaces xe-3/0/3
+  delete interfaces xe-3/0/4
+  delete interfaces xe-3/0/5
+
+  set interfaces xe-0/0/3 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-0/0/4 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-0/0/5 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-1/0/3 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-1/0/4 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-1/0/5 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-2/0/3 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-2/0/4 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-2/0/5 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-3/0/3 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-3/0/4 unit 0 family ethernet-switching vlan members white-2
+  set interfaces xe-3/0/5 unit 0 family ethernet-switching vlan members white-2
+
+:
+:  Enable LACP for orange links:
+:
+
+  set vlans orange
+  set chassis aggregated-devices ethernet device-count 48
+
+:
+:  gw-1-b: ae0
+:
+:    ix0: white-1 xe-1/0/1.0
+:    ix1: orange  xe-0/0/8.0
+:    ix2:
+:    ix3: orange  xe-3/0/8.0
+:
+
+  set interfaces xe-0/0/8 ether-options 802.3ad ae0
+  set interfaces xe-3/0/8 ether-options 802.3ad ae0
+  set interfaces ae0 aggregated-ether-options lacp active periodic slow
+  set interfaces ae0 unit 0 description "gw-1-b orange network"
+  set interfaces ae0 unit 0 family ethernet-switching vlan members orange
+
+:
+:  gw-2-b: ae1
+:
+:    ix0: white-1
+:    ix1: orange xe-2/0/8.0
+:    ix2:
+:    ix3: orange xe-1/0/8.0
+: 
+
+  set interfaces xe-2/0/8 ether-options 802.3ad ae1
+  set interfaces xe-1/0/8 ether-options 802.3ad ae1
+  set interfaces ae1 aggregated-ether-options lacp active periodic slow
+  set interfaces ae1 unit 0 description "gw-2-b orange network"
+  set interfaces ae1 unit 0 family ethernet-switching vlan members orange
+
+:
+:  gw-3-b: ae2
+: 
+:    ix0: white-2 xe-1/0/3.0
+:    ix1: orange  xe-0/0/9.0
+:    ix2:
+:    ix3: orange  xe-3/0/9.0
+: 
+
+  set interfaces xe-0/0/9 ether-options 802.3ad ae2
+  set interfaces xe-3/0/9 ether-options 802.3ad ae2
+  set interfaces ae2 aggregated-ether-options lacp active periodic slow
+  set interfaces ae2 unit 0 description "gw-3-b orange network"
+  set interfaces ae2 unit 0 family ethernet-switching vlan members orange
+
+:
+:  gw-4-b: ae3
+:
+:    ix0: white-2 xe-3/0/3.0
+:    ix1: orange  xe-2/0/9.0
+:    ix2:
+:    ix3: orange  xe-1/0/9.0
+:
+
+  set interfaces xe-2/0/9 ether-options 802.3ad ae3
+  set interfaces xe-1/0/9 ether-options 802.3ad ae3
+  set interfaces ae3 aggregated-ether-options lacp active periodic slow
+  set interfaces ae3 unit 0 description "gw-4-b orange network"
+  set interfaces ae3 unit 0 family ethernet-switching vlan members orange
+
+:
+:  tools-1-b: ae4
+:
+:    ix0: orange xe-0/0/10.0
+:    ix1: orange xe-3/0/10.0
+:
+
+  set interfaces xe-0/0/10 ether-options 802.3ad ae4
+  set interfaces xe-3/0/10 ether-options 802.3ad ae4
+  set interfaces ae4 aggregated-ether-options lacp active periodic slow
+  set interfaces ae4 unit 0 description "tools-1-b orange network"
+  set interfaces ae4 unit 0 family ethernet-switching vlan members orange
+
+:
+:  tools-2-b: ae5
+:
+:    ix0: orange xe-2/0/10.0
+:    ix1: orange xe-1/0/10.0
+:
+
+  set interfaces xe-2/0/10 ether-options 802.3ad ae5
+  set interfaces xe-1/0/10 ether-options 802.3ad ae5
+  set interfaces ae5 aggregated-ether-options lacp active periodic slow
+  set interfaces ae5 unit 0 description "tools-2-b orange network"
+  set interfaces ae5 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-1-b: ae6
+:
+:    ix0: orange xe-0/0/23
+:    ix2: orange xe-3/0/16
+:
+
+  set interfaces xe-0/0/23 ether-options 802.3ad ae6
+  set interfaces xe-3/0/16 ether-options 802.3ad ae6
+  set interfaces ae6 aggregated-ether-options lacp active periodic slow
+  set interfaces ae6 unit 0 description "n-1-b orange network"
+  set interfaces ae6 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-2-b: ae7
+:
+:    ix0: orange xe-2/0/23
+:    ix2: orange xe-1/0/16
+:
+
+  set interfaces xe-2/0/23 ether-options 802.3ad ae7
+  set interfaces xe-1/0/16 ether-options 802.3ad ae7
+  set interfaces ae7 aggregated-ether-options lacp active periodic slow
+  set interfaces ae7 unit 0 description "n-2-b orange network"
+  set interfaces ae7 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-3-b: ae8
+:
+:    ix0: orange xe-0/0/24.0
+:    ix2: orange xe-3/0/17.0
+:
+
+  set interfaces xe-0/0/24 ether-options 802.3ad ae8
+  set interfaces xe-3/0/17 ether-options 802.3ad ae8
+  set interfaces ae8 aggregated-ether-options lacp active periodic slow
+  set interfaces ae8 unit 0 description "n-3-b orange network"
+  set interfaces ae8 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-4-b: ae9
+:
+:    eth0: orange xe-2/0/24.0
+:    eth2: orange xe-1/0/17.0
+:
+
+  set interfaces xe-2/0/24 ether-options 802.3ad ae9
+  set interfaces xe-1/0/17 ether-options 802.3ad ae9
+  set interfaces ae9 aggregated-ether-options lacp active periodic slow
+  set interfaces ae9 unit 0 description "n-4-b orange network"
+  set interfaces ae9 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-5-b: ae10
+:
+:    eth0: orange xe-0/0/25.0
+:    eth2: orange xe-3/0/18.0
+:
+
+  set interfaces xe-0/0/25 ether-options 802.3ad ae10
+  set interfaces xe-3/0/18 ether-options 802.3ad ae10
+  set interfaces ae10 aggregated-ether-options lacp active periodic slow
+  set interfaces ae10 unit 0 description "n-5-b orange network"
+  set interfaces ae10 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-6-b: ae11
+:
+:    eth0: orange xe-2/0/25.0
+:    eth2: orange xe-1/0/18.0
+:
+
+  set interfaces xe-2/0/25 ether-options 802.3ad ae11
+  set interfaces xe-1/0/18 ether-options 802.3ad ae11
+  set interfaces ae11 aggregated-ether-options lacp active periodic slow
+  set interfaces ae11 unit 0 description "n-6-b orange network"
+  set interfaces ae11 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-7-b: ae12
+:
+:    eth0: orange xe-0/0/26.0
+:    eth2: orange xe-3/0/19.0
+:
+
+  set interfaces xe-0/0/26 ether-options 802.3ad ae12
+  set interfaces xe-3/0/19 ether-options 802.3ad ae12
+  set interfaces ae12 aggregated-ether-options lacp active periodic slow
+  set interfaces ae12 unit 0 description "n-7-b orange network"
+  set interfaces ae12 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-8-b: ae13
+:
+:    eth0: orange xe-2/0/26.0
+:    eth2: orange xe-1/0/19.0
+:
+
+  set interfaces xe-2/0/26 ether-options 802.3ad ae13
+  set interfaces xe-1/0/19 ether-options 802.3ad ae13
+  set interfaces ae13 aggregated-ether-options lacp active periodic slow
+  set interfaces ae13 unit 0 description "n-8-b orange network"
+  set interfaces ae13 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-9-b: ae14
+:
+:    eth0: orange xe-0/0/27.0
+:    eth2: orange xe-3/0/20.0
+:
+
+  set interfaces xe-0/0/27 ether-options 802.3ad ae14
+  set interfaces xe-3/0/20 ether-options 802.3ad ae14
+  set interfaces ae14 aggregated-ether-options lacp active periodic slow
+  set interfaces ae14 unit 0 description "n-9-b orange network"
+  set interfaces ae14 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-10-b: ae15
+:
+:    eth0: orange xe-2/0/27.0
+:    eth2: orange xe-1/0/20.0
+:
+
+  set interfaces xe-2/0/27 ether-options 802.3ad ae15
+  set interfaces xe-1/0/20 ether-options 802.3ad ae15
+  set interfaces ae15 aggregated-ether-options lacp active periodic slow
+  set interfaces ae15 unit 0 description "n-10-b orange network"
+  set interfaces ae15 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-11-b: ae16
+:
+:    eth0: orange xe-0/0/28.0
+:    eth2: orange xe-3/0/21.0
+:
+
+  set interfaces xe-0/0/28 ether-options 802.3ad ae16
+  set interfaces xe-3/0/21 ether-options 802.3ad ae16
+  set interfaces ae16 aggregated-ether-options lacp active periodic slow
+  set interfaces ae16 unit 0 description "n-11-b orange network"
+  set interfaces ae16 unit 0 family ethernet-switching vlan members orange
+
+:
+:  n-12-b: ae17
+:
+:    eth0: orange xe-2/0/28.0
+:    eth2: orange xe-1/0/21.0
+:
+
+  set interfaces xe-2/0/28 ether-options 802.3ad ae17
+  set interfaces xe-1/0/21 ether-options 802.3ad ae17
+  set interfaces ae17 aggregated-ether-options lacp active periodic slow
+  set interfaces ae17 unit 0 description "n-12-b orange network"
+  set interfaces ae17 unit 0 family ethernet-switching vlan members orange
+
+:
+:  db-1-b: ae18
+:
+:    ix0: orange xe-0/0/29.0
+:    ix1: orange xe-3/0/11.0
+:
+
+  set interfaces xe-0/0/29 ether-options 802.3ad ae18
+  set interfaces xe-3/0/11 ether-options 802.3ad ae18
+  set interfaces ae18 aggregated-ether-options lacp active periodic slow
+  set interfaces ae18 unit 0 description "db-1-b orange network"
+  set interfaces ae18 unit 0 family ethernet-switching vlan members orange
+
+:
+:  db-2-b: ae19
+:
+:    ix0: orange xe-2/0/29.0
+:    ix1: orange xe-1/0/11.0
+:
+
+  set interfaces xe-2/0/29 ether-options 802.3ad ae19
+  set interfaces xe-1/0/11 ether-options 802.3ad ae19
+  set interfaces ae19 aggregated-ether-options lacp active periodic slow
+  set interfaces ae19 unit 0 description "db-2-b orange network"
+  set interfaces ae19 unit 0 family ethernet-switching vlan members orange
+
+:
+:  db-3-b: ae20
+:
+:    ix0: orange xe-1/0/14.0
+:    ix1: orange xe-3/0/14.0
+:
+
+  set interfaces xe-1/0/14 ether-options 802.3ad ae20
+  set interfaces xe-3/0/14 ether-options 802.3ad ae20
+  set interfaces ae20 aggregated-ether-options lacp active periodic slow
+  set interfaces ae20 unit 0 description "db-3-b orange network"
+  set interfaces ae20 unit 0 family ethernet-switching vlan members orange
+
+:
+:  db-4-b: ae21
+:
+:    ix0: orange xe-1/0/15.0
+:    ix1: orange xe-3/0/15.0
+:
+
+  set interfaces xe-1/0/15 ether-options 802.3ad ae21
+  set interfaces xe-3/0/15 ether-options 802.3ad ae21
+  set interfaces ae21 aggregated-ether-options lacp active periodic slow
+  set interfaces ae21 unit 0 description "db-4-b orange network"
+  set interfaces ae21 unit 0 family ethernet-switching vlan members orange
+
+:
+:  db-9-b: ae22
+:
+:    ix0: orange xe-2/0/30.0
+:    ix1: orange xe-1/0/12.0
+:
+
+  set interfaces xe-2/0/30 ether-options 802.3ad ae22
+  set interfaces xe-1/0/12 ether-options 802.3ad ae22
+  set interfaces ae22 aggregated-ether-options lacp active periodic slow
+  set interfaces ae22 unit 0 description "db-9-b orange network"
+  set interfaces ae22 unit 0 family ethernet-switching vlan members orange
+
+:
+:  db-10-b: ae23
+:
+:    ix0: orange xe-3/0/22.0
+:    ix1: orange xe-1/0/22.0
+:
+
+  set interfaces xe-3/0/22 ether-options 802.3ad ae23
+  set interfaces xe-1/0/22 ether-options 802.3ad ae23
+  set interfaces ae23 aggregated-ether-options lacp active periodic slow
+  set interfaces ae23 unit 0 description "db-10-b orange network"
+  set interfaces ae23 unit 0 family ethernet-switching vlan members orange
+
+:
+:  storage-1-b: ae24
+:
+:    ixgbe2: orange xe-3/0/13.0
+:    ixgbe3: orange xe-0/0/30.0
+:
+
+  set interfaces xe-3/0/13 ether-options 802.3ad ae24
+  set interfaces xe-0/0/30 ether-options 802.3ad ae24
+  set interfaces ae24 aggregated-ether-options lacp active periodic slow
+  set interfaces ae24 unit 0 description "storage-1-b orange network"
+  set interfaces ae24 unit 0 family ethernet-switching vlan members orange
+
+:
+:  storage-2-b: ae25
+:
+:    ixgbe2: orange xe-3/0/12.0
+:    ixgbe3: orange xe-0/0/31.0
+:
+
+  set interfaces xe-3/0/12 ether-options 802.3ad ae25
+  set interfaces xe-0/0/31 ether-options 802.3ad ae25
+  set interfaces ae25 aggregated-ether-options lacp active periodic slow
+  set interfaces ae25 unit 0 description "storage-2-b orange network"
+  set interfaces ae25 unit 0 family ethernet-switching vlan members orange
+
+:
+:  storage-3-b: ae26
+:
+:    ix2: orange xe-1/0/13.0
+:    ix3: orange xe-2/0/31.0
+:
+
+  set interfaces xe-1/0/13 ether-options 802.3ad ae26
+  set interfaces xe-2/0/31 ether-options 802.3ad ae26
+  set interfaces ae26 aggregated-ether-options lacp active periodic slow
+  set interfaces ae26 unit 0 description "storage-3-b orange network"
+  set interfaces ae26 unit 0 family ethernet-switching vlan members orange
+
+: ------------------------------------------------------------------------- :
+:
+: Networks white-1 and white-2 uplink are Single Points of Failure,
+: but gateway in other rack is able to take over CARP-interfaces.
+:
+: ------------------------------------------------------------------------- :

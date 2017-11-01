@@ -1,0 +1,1513 @@
+## Last changed: 2017-07-12 14:35:49 CEST
+version 13.2X51-D35.3;
+system {
+    host-name juniper-1-b;
+    auto-snapshot;
+    time-zone Europe/Berlin;
+    root-authentication {
+        encrypted-password "$1$Example1"; ## SECRET-DATA
+    }
+    login {
+        user tino {
+            full-name "Tino Reinhardt";
+            uid 2000;
+            class super-user;
+            authentication {
+                encrypted-password "$1$Example2"; ## SECRET-DATA
+            }
+        }
+    }
+    services {
+        ssh {
+            protocol-version v2;
+        }
+        netconf {
+            ssh;
+        }
+        web-management {
+            http;
+        }
+        dhcp {
+            traceoptions {
+                file dhcp_logfile;
+                level all;
+                flag all;
+            }
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    ntp {
+        boot-server 10.5.1.9;
+        server 10.5.1.9;
+        server 10.5.1.10;
+    }
+}
+chassis {
+    aggregated-devices {
+        ethernet {
+            device-count 48;
+        }
+    }
+    auto-image-upgrade;
+}
+interfaces {
+    xe-0/0/0 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-0/0/1 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-0/0/2 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-0/0/3 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-0/0/4 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-0/0/5 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-0/0/8 {
+        ether-options {
+            802.3ad ae0;
+        }
+    }
+    xe-0/0/9 {
+        ether-options {
+            802.3ad ae2;
+        }
+    }
+    xe-0/0/10 {
+        ether-options {
+            802.3ad ae4;
+        }
+    }
+    xe-0/0/11 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/12 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/13 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/14 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/15 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/16 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/17 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/18 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/19 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/20 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/21 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/22 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-0/0/23 {
+        ether-options {
+            802.3ad ae6;
+        }
+    }
+    xe-0/0/24 {
+        ether-options {
+            802.3ad ae8;
+        }
+    }
+    xe-0/0/25 {
+        ether-options {
+            802.3ad ae10;
+        }
+    }
+    xe-0/0/26 {
+        ether-options {
+            802.3ad ae12;
+        }
+    }
+    xe-0/0/27 {
+        ether-options {
+            802.3ad ae14;
+        }
+    }
+    xe-0/0/28 {
+        ether-options {
+            802.3ad ae16;
+        }
+    }
+    xe-0/0/29 {
+        ether-options {
+            802.3ad ae18;
+        }
+    }
+    xe-0/0/30 {
+        ether-options {
+            802.3ad ae24;
+        }
+    }
+    xe-0/0/31 {
+        ether-options {
+            802.3ad ae25;
+        }
+    }
+    et-0/1/0 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/1/0 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    et-0/1/1 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/1/1 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/1/2 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/1/3 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/1/4 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/1/5 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/1/6 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/1/7 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    et-0/2/0 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/2/0 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    et-0/2/1 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/2/1 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/2/2 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/2/3 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/2/4 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/2/5 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/2/6 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    ge-0/2/7 {
+        unit 0 {
+            family ethernet-switching;
+        }
+    }
+    xe-1/0/0 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-1/0/1 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-1/0/2 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-1/0/3 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-1/0/4 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-1/0/5 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-1/0/8 {
+        ether-options {
+            802.3ad ae1;
+        }
+    }
+    xe-1/0/9 {
+        ether-options {
+            802.3ad ae3;
+        }
+    }
+    xe-1/0/10 {
+        ether-options {
+            802.3ad ae5;
+        }
+    }
+    xe-1/0/11 {
+        ether-options {
+            802.3ad ae19;
+        }
+    }
+    xe-1/0/12 {
+        ether-options {
+            802.3ad ae22;
+        }
+    }
+    xe-1/0/13 {
+        ether-options {
+            802.3ad ae26;
+        }
+    }
+    xe-1/0/14 {
+        ether-options {
+            802.3ad ae20;
+        }
+    }
+    xe-1/0/15 {
+        ether-options {
+            802.3ad ae21;
+        }
+    }
+    xe-1/0/16 {
+        ether-options {
+            802.3ad ae7;
+        }
+    }
+    xe-1/0/17 {
+        ether-options {
+            802.3ad ae9;
+        }
+    }
+    xe-1/0/18 {
+        ether-options {
+            802.3ad ae11;
+        }
+    }
+    xe-1/0/19 {
+        ether-options {
+            802.3ad ae13;
+        }
+    }
+    xe-1/0/20 {
+        ether-options {
+            802.3ad ae15;
+        }
+    }
+    xe-1/0/21 {
+        ether-options {
+            802.3ad ae17;
+        }
+    }
+    xe-1/0/22 {
+        ether-options {
+            802.3ad ae23;
+        }
+    }
+    xe-1/0/23 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-1/0/24 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-1/0/25 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-1/0/26 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-1/0/27 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-1/0/28 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-1/0/29 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-1/0/30 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-1/0/31 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/0 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-2/0/1 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-2/0/2 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-2/0/3 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-2/0/4 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-2/0/5 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-2/0/8 {
+        ether-options {
+            802.3ad ae1;
+        }
+    }
+    xe-2/0/9 {
+        ether-options {
+            802.3ad ae3;
+        }
+    }
+    xe-2/0/10 {
+        ether-options {
+            802.3ad ae5;
+        }
+    }
+    xe-2/0/11 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/12 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/13 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/14 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/15 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/16 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/17 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/18 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/19 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/20 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/21 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/22 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-2/0/23 {
+        ether-options {
+            802.3ad ae7;
+        }
+    }
+    xe-2/0/24 {
+        ether-options {
+            802.3ad ae9;
+        }
+    }
+    xe-2/0/25 {
+        ether-options {
+            802.3ad ae11;
+        }
+    }
+    xe-2/0/26 {
+        ether-options {
+            802.3ad ae13;
+        }
+    }
+    xe-2/0/27 {
+        ether-options {
+            802.3ad ae15;
+        }
+    }
+    xe-2/0/28 {
+        ether-options {
+            802.3ad ae17;
+        }
+    }
+    xe-2/0/29 {
+        ether-options {
+            802.3ad ae19;
+        }
+    }
+    xe-2/0/30 {
+        ether-options {
+            802.3ad ae22;
+        }
+    }
+    xe-2/0/31 {
+        ether-options {
+            802.3ad ae26;
+        }
+    }
+    xe-3/0/0 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-3/0/1 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-3/0/2 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-1;
+                }
+            }
+        }
+    }
+    xe-3/0/3 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-3/0/4 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-3/0/5 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members white-2;
+                }
+            }
+        }
+    }
+    xe-3/0/8 {
+        ether-options {
+            802.3ad ae0;
+        }
+    }
+    xe-3/0/9 {
+        ether-options {
+            802.3ad ae2;
+        }
+    }
+    xe-3/0/10 {
+        ether-options {
+            802.3ad ae4;
+        }
+    }
+    xe-3/0/11 {
+        ether-options {
+            802.3ad ae18;
+        }
+    }
+    xe-3/0/12 {
+        ether-options {
+            802.3ad ae25;
+        }
+    }
+    xe-3/0/13 {
+        ether-options {
+            802.3ad ae24;
+        }
+    }
+    xe-3/0/14 {
+        ether-options {
+            802.3ad ae20;
+        }
+    }
+    xe-3/0/15 {
+        ether-options {
+            802.3ad ae21;
+        }
+    }
+    xe-3/0/16 {
+        ether-options {
+            802.3ad ae6;
+        }
+    }
+    xe-3/0/17 {
+        ether-options {
+            802.3ad ae8;
+        }
+    }
+    xe-3/0/18 {
+        ether-options {
+            802.3ad ae10;
+        }
+    }
+    xe-3/0/19 {
+        ether-options {
+            802.3ad ae12;
+        }
+    }
+    xe-3/0/20 {
+        ether-options {
+            802.3ad ae14;
+        }
+    }
+    xe-3/0/21 {
+        ether-options {
+            802.3ad ae16;
+        }
+    }
+    xe-3/0/22 {
+        ether-options {
+            802.3ad ae23;
+        }
+    }
+    xe-3/0/23 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-3/0/24 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-3/0/25 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-3/0/26 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-3/0/27 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-3/0/28 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-3/0/29 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-3/0/30 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    xe-3/0/31 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae0 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "gw-1-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae1 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "gw-2-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae2 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "gw-3-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae3 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "gw-4-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae4 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "tools-1-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae5 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "tools-2-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae6 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-1-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae7 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-2-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae8 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-3-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae9 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-4-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae10 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-5-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae11 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-6-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae12 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-7-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae13 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-8-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae14 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-9-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae15 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-10-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae16 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-11-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae17 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "n-12-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae18 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "db-1-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae19 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "db-2-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae20 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "db-3-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae21 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "db-4-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae22 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "db-9-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae23 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "db-10-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae24 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "storage-1-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae25 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "storage-2-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    ae26 {
+        aggregated-ether-options {
+            lacp {
+                active;
+                periodic slow;
+            }
+        }
+        unit 0 {
+            description "storage-3-b orange network";
+            family ethernet-switching {
+                vlan {
+                    members orange;
+                }
+            }
+        }
+    }
+    vme {
+        unit 0 {
+            family inet {
+                address 10.5.1.4/24;
+            }
+        }
+    }
+}
+snmp {
+    client-list list0 {
+        10.5.1.0/24;
+    }
+    community public {
+        authorization read-only;
+        client-list-name list0;
+    }
+    trap-group nagios {
+        categories {
+            authentication;
+            chassis;
+            configuration;
+        }
+        targets {
+            10.5.1.9;
+            10.5.1.10;
+        }
+    }
+}
+protocols {
+    igmp-snooping {
+        vlan all;
+    }
+    dcbx {
+        interface all;
+    }
+    rstp;
+    lldp {
+        interface all;
+    }
+    lldp-med {
+        interface all;
+    }
+}
+ethernet-switching-options {
+    storm-control {
+        interface all;
+    }
+}
+vlans {
+    orange;
+    white-1;
+    white-2;
+}
