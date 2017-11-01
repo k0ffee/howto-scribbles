@@ -52,4 +52,40 @@ cat > /etc/newsyslog.conf.d/nginx <<'EOF'
 EOF
 
 cat > /usr/local/etc/nginx/nginx.conf <<EOF
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile           off;
+    keepalive_timeout  65;
+
+    server {
+        listen       80;
+        listen       [::]:80;
+        server_name  munin-1-b.example.com munin-2-b.example.com munin-b.example.com;
+
+        location ^~ /munin-cgi/munin-cgi-graph/ {
+            fastcgi_split_path_info ^(/munin-cgi/munin-cgi-graph)(.*);
+            fastcgi_param PATH_INFO $fastcgi_path_info;
+            fastcgi_pass unix:/var/run/munin/fastcgi-graph.sock;
+            include fastcgi_params;
+        }
+
+        location /static/ {
+            root /usr/local/www/munin/;
+            expires 1d;
+        }
+
+        location / {
+            root /usr/local/www/munin/;
+            expires 10s;
+        }
+    }
+}
 EOF
