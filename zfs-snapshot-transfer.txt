@@ -4,16 +4,24 @@
 # Syncing ZFS snapshots from Nexenta-appliance to local storage.
 # This requires one initial snapshot to be transferred manually.
 #
+
 PATH=/usr/bin:/sbin
 set -eu
 
 ssh=(ssh -carcfour)  # for speed reasons on point-to-point crosslink
 
-if $ssh root@xlink-storage-1-b zfs list -t snapshot -o name -H | \
+node1=xlink-storage-1-b
+node2=xlink-storage-2-b
+
+#
+# See which storage nodes is the active one, having the
+# `data' pool imported:
+#
+if $ssh root@$host1 zfs list -t snapshot -o name -H | \
     grep '^data/var/www@snap-hourly-1-latest$' >/dev/null; then
-    host=xlink-storage-1-b
+    host=$node1
 else
-    host=xlink-storage-2-b
+    host=$node2
 fi
 
 $ssh root@$host zfs list -t snapshot -s creation -o name -H | \
@@ -34,7 +42,7 @@ zfs list -t snapshot -s creation -o name -H | grep '^data/var/www@' | \
 [[ -z $ihave  ]] && exit 1
 [[ $ihave == $latest ]] && exit
 
-$ssh root@xlink-storage-1-b zfs send -I $ihave $latest | \
+$ssh root@$host zfs send -I $ihave $latest | \
     zfs receive -F $latest
 
 #
