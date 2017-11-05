@@ -1,0 +1,41 @@
+#! /usr/local/bin/zsh
+
+#
+# This creates ZFS snapshots and deletes them if
+# snapshot list is long enough. Run this from cron.
+#
+
+PATH=/usr/local/bin:/usr/bin:/bin:/sbin
+export PATH
+set -eu
+
+argv0=$0
+function usage {
+    print -n "Error: need mumber of snapshots to keep "
+    print    "and name of filesystem to snapshot"
+    print -r "Usage: ${argv0##*/} <number> <name>"
+    exit 1
+}
+
+[[ $# -ne 2 ]] && usage 
+
+keep=$1
+rootfs=$2
+date=$(date -u +%Y%m%d%H%M)
+[[ -z $date ]] && date=unknown
+[[ $keep =~ [^[:digit:]] ]] && usage
+
+#
+# Creation of snapshots:
+#
+if zfs list -o name | grep "^$rootfs$" >/dev/null; then
+    zfs list -t snapshot -o name -H | grep "^${rootfs}@$date" >/dev/null || \
+        zfs snapshot -r -- "${rootfs}@$date"
+fi
+
+#
+# Destruction of snapshots:
+#
+zfs list -t snapshot -S creation -o name -H | grep "^$rootfs"@ | \
+    sed 1,"$keep"d | grep @ | \
+        while read line; do zfs destroy -r -- "$line"; done
