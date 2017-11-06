@@ -2,7 +2,12 @@
 
 #
 # This creates ZFS snapshots and deletes them if
-# snapshot list is long enough. Run this from cron.
+# the snapshot list is long enough.
+#
+# Example crontab entries:
+#
+# 14    7 * * * root /root/bin/snapshot 14  zroot/ROOT/default
+# 14,44 * * * * root /root/bin/snapshot 336 data
 #
 
 PATH=/usr/local/bin:/usr/bin:/bin:/sbin
@@ -22,6 +27,7 @@ function usage {
 keep=$1
 rootfs=$2
 date=$(date -u +%Y%m%d%H%M)
+
 [[ -z $date ]] && date=unknown
 [[ $keep =~ [^[:digit:]] ]] && usage
 
@@ -38,4 +44,6 @@ fi
 #
 zfs list -t snapshot -S creation -o name -H | grep "^$rootfs"@ | \
     sed 1,"$keep"d | grep @ | \
-        while read line; do zfs destroy -r -- "$line"; done
+        while read line; do
+            zfs destroy -r -- "$line"
+        done
