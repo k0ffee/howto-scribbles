@@ -1,0 +1,26 @@
+#
+# Let MySQL do its prefetching itself:
+#
+vfs.zfs.prefetch_disable=1
+#
+# MySQL autosizes this queue as:
+#     50 + (max_connections / 5)
+#
+kern.ipc.soacceptqueue=1024
+
+#
+# Anti-DoS stuff:
+#
+# Have larger ports range and finalize connections quickly
+# on loaded network host.
+#
+net.inet.ip.portrange.first=1024
+net.inet.ip.portrange.last=65535
+net.inet.tcp.fast_finwait2_recycle=1
+
+#
+# For jails.
+# IPv6 can be slow finishing duplicate address detection (DAD),
+# leaving jailed daemons fail to bind to interfaces.
+#
+net.inet6.ip6.dad_count=0

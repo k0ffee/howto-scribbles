@@ -1,0 +1,22 @@
+#
+# This can be used to make CARP master status sticky, we can do admin tasks
+# and reboot system, etc., on backup system.
+#
+# net.inet.carp.preempt=1
+
+#
+# Anti-DoS stuff:
+#
+# Have larger ports range and finalize connections quickly
+# on loaded nginx-gateway.
+#
+net.inet.ip.portrange.first=1024
+net.inet.ip.portrange.last=65535
+net.inet.tcp.fast_finwait2_recycle=1
+
+#
+# For jails.
+# IPv6 can be slow finishing duplicate address detection (DAD),
+# leaving jailed daemons fail to bind to interfaces.
+#
+net.inet6.ip6.dad_count=0
