@@ -16,7 +16,7 @@ set -eu
 
 argv0=$0
 function usage {
-    print -n "Error: need mumber of snapshots to keep "
+    print -n "Error: need number of snapshots to keep "
     print    "and name of filesystem to snapshot"
     print -r "Usage: ${argv0##*/} <number> <name>"
     exit 1
