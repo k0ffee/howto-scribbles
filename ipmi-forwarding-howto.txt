@@ -1,0 +1,105 @@
+:
+: Small example of forwarding access to a Supermicro IPMI-controller's
+: webinterface and Java console via two network hops:
+:
+: Your laptop <--> SSH gateway <--> Internal tool server <--> IPMI BMC.
+:          [Internet]       [Intranet 1]              [Intranet 2]
+:
+: First a shellscript to forward all relevant ports.
+: Run this as an unprivileged user, probably yourself,
+: having access to the SSH-gateway and the Tool server
+: behind it.
+:
+: Adjust $hop1, $hop2, and $target with your systems names.
+:
+
+:------------------------------------------------------------:
+:
+: Begin of this file.
+:
+
+#! /usr/bin/env zsh
+
+#
+# Two hops are necessary to access IPMI-controllers.
+#
+
+PATH=/usr/bin:/bin
+set -eu
+
+hop1=ssh-1-b
+hop2=tools-1-b
+target=ipmi-db-1-b
+
+#
+# Clean up all backgrounded processes once this program ends.
+#
+trap 'kill ${${(v)jobstates##*:*:}%=*}' INT TERM HUP EXIT
+
+#
+# This opens the first tunnel:
+#
+ssh -NL 8022:$hop2:22 $hop1 &
+
+#
+# This should be enough to get the backgrounded SSH connected:
+#
+sleep 10
+
+#
+# Now forward all ports relevant for this management controllers
+# web- and Java client.
+#
+# This opens the second tunnel inside the first tunnel.
+#
+ssh -vCNL 8080:$target:443 \
+    -L5900:$target:5900 \
+    -L5901:$target:5901 \
+    -L5120:$target:5120 \
+    -L5123:$target:5123 \
+    -L8623:$target:623 -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null -p 8022 localhost
+#
+# Now point your browser to https://localhost.
+#
+
+:
+: End of this file.
+:
+:------------------------------------------------------------:
+
+:
+: In a second shell enable forwarding of privileged ports
+: 443 and 623 to 8080 and 8623. You'll probably run this via sudo.
+:
+
+:------------------------------------------------------------:
+:
+: Begin of this file.
+:
+
+#! /usr/bin/env zsh
+
+user=nobody
+
+in_address=127.0.0.1  # Java-application is IPv4 only.
+out_address=127.0.0.1
+
+in_port=443
+out_port=8080
+
+socat TCP-LISTEN:$in_port,bind=$in_address,reuseaddr,fork,su=$user \
+    TCP:$out_address:$out_port &
+
+in_port=623
+out_port=8623
+
+socat TCP-LISTEN:$in_port,bind=$in_address,reuseaddr,fork,su=$user \
+  TCP:$out_address:$out_port
+
+wait
+
+:
+: End of this file.
+:
+:------------------------------------------------------------:
