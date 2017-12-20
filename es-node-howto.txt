@@ -98,7 +98,7 @@ EOF
 chmod 600 /usr/local/etc/monitrc
 
 grep '^monit_enable=' /etc/rc.conf || \
-cat >> /et/rc.conf <<'EOF'
+cat >> /etc/rc.conf <<'EOF'
 
 monit_enable="YES"
 EOF
