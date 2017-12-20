@@ -19,16 +19,12 @@ cf-agent --bootstrap $(ifconfig lagg0 | awk '$1=="inet6"{print $2}')
 : trustkey    => "false";
 :
 
-grep '^cf_' /etc/rc.conf || cat >> /etc/rc.conf <<EOF
-cf_serverd_enable="YES"
-cf_execd_enable="YES"
-EOF
+sysrc cf_serverd_enable="YES" cf_execd_enable="YES"
 
 :
 : Adding a client:
 :
-pkg install -y cfengine310 && grep '^cf_execd_enable=' /etc/rc.conf || \
-    echo >> /etc/rc.conf && echo 'cf_execd_enable="YES"' >> /etc/rc.conf
+pkg install -y cfengine310 && sysrc cf_execd_enable="YES"
 echo fd42:dc76:90a3:b::1:89 > /var/cfengine/policy_server.dat
 cf-key && cf-key -p /var/cfengine/ppkeys/localhost.pub
 cat /var/cfengine/ppkeys/localhost.pub && hostname

@@ -6,11 +6,7 @@
 
 pkg install -y nrpe-ssl
 
-grep '^nrpe2_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-nrpe2_enable="YES"
-EOF
+sysrc nrpe2_enable="YES"
 
 allowed_hosts="nagios-1-b,nagios-2-b"
 sed "s/\\(^allowed_hosts=\\).*/\1$allowed_hosts/" \

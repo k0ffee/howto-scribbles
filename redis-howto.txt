@@ -7,11 +7,7 @@ ASSUME_ALWAYS_YES=yes \
 
 mkdir -p /service /var/service
 
-grep '^svscan_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-svscan_enable="YES"
-EOF
+sysrc svscan_enable="YES"
 
 for i in 0 1 2; do
     mkdir -p /service/redis-700$i/log /var/db/redis/700$i \

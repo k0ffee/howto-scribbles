@@ -50,12 +50,7 @@ chown -R elasticsearch:elasticsearch /var/log/elasticsearch
 mkdir -p /data
 chown -R elasticsearch:elasticsearch /data
 
-grep -i '^elasticsearch_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-elasticsearch_enable="YES"
-elasticsearch_max_mem="32g"
-EOF
+sysrc elasticsearch_enable="YES" elasticsearch_max_mem="32g"
 
 :
 : For elasticsearch 1.7:
@@ -97,8 +92,4 @@ EOF
 
 chmod 600 /usr/local/etc/monitrc
 
-grep '^monit_enable=' /etc/rc.conf || \
-cat >> /etc/rc.conf <<'EOF'
-
-monit_enable="YES"
-EOF
+sysrc monit_enable="YES"

@@ -7,15 +7,7 @@ ASSUME_ALWAYS_YES=yes \
 
 mkdir -p /service /var/service
 
-grep '^svscan_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-svscan_enable="YES"
-EOF
-grep '^nginx_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-nginx_enable="YES"
-EOF
+sysrc svscan_enable="YES" nginx_enable="YES"
 
 dir=/service/munin-cgi-graph
 mkdir -p $dir/log

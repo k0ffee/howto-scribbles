@@ -4,10 +4,7 @@
 
 pkg install -y gitolite git daemontools
 
-grep '^svscan_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-svscan_enable="YES"
-EOF
+sysrc svscan_enable="YES"
 mkdir -p /service /var/service
 
 :

@@ -33,10 +33,7 @@ EOF
 
 pkg install -y daemontools
 mkdir -p /service /var/service
-grep '^svscan_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-svscan_enable="YES"
-EOF
+sysrc svscan_enable="YES"
 service svscan start
 
 mkdir -p /service/collectd-server/log
@@ -83,12 +80,7 @@ cd /root && curl -O https://codeload.github.com/pommi/CGP/zip/master
 
 pkg install -y php71 php71-json php71-filter nginx-lite
 
-grep '^nginx_enable=' /etc/rc.conf || cat >> /etc/rc.conf <<'EOF'
-nginx_enable="YES"
-EOF
-grep '^php_fpm_enable=' /etc/rc.conf || cat >> /etc/rc.conf <<'EOF'
-php_fpm_enable="YES"
-EOF
+sysrc nginx_enable="YES" php_fpm_enable="YES"
 
 :
 : Quick hack to ignore ZFS snapshots in df-plugin:

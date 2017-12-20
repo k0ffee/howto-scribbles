@@ -22,15 +22,7 @@ chown elasticsearch:elasticsearch /data
 :   allow 10.4.1.67              # munin-2-b # jail
 :
 
-grep '^munin_node_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-munin_node_enable="YES"
-EOF
-grep '^monit_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-monit_enable="YES"
-EOF
+sysrc munin_node_enable="YES" monit_enable="YES"
 
 cat > /usr/local/etc/monitrc <<'EOF'
 set daemon 10 with start delay 30
@@ -79,12 +71,7 @@ path:
   logs: /var/log/elasticsearch
 EOF
 
-grep '^elasticearch_enable=' /etc/rc.conf || \
-  cat >> /etc/rc.conf <<'EOF'
-
-elasticsearch_enable="YES"
-elasticsearch_max_mem="32g"
-EOF
+sysrc elasticsearch_enable="YES" elasticsearch_max_mem="32g"
 
 service monit start
 service elasticsearch start

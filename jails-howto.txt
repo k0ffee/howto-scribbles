@@ -10,11 +10,7 @@ cd /usr/src && make -j16 buildworld >> /root/log
 make installworld DESTDIR=/jails/db-5-b
 make distribution DESTDIR=/jails/db-5-b
 
-cat >> /etc/rc.conf <<'EOF'
-
-jail_enable="YES"
-jail_list="db-5-b"
-EOF
+sysrc jail_enable="YES" jail_list="db-5-b"
 
 cat > /etc/jail.conf <<'EOF'
 allow.raw_sockets;

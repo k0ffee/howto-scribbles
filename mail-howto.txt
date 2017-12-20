@@ -16,11 +16,7 @@ done
 
 mkdir -p /service /var/service
 
-grep '^svscan_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-svscan_enable="YES"
-EOF
+sysrc svscan_enable="YES"
 
 for dir in /service/qmail-send/log /service/qmail-smtp/log \
            /service/qmail-smtp6/log; do

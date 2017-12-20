@@ -8,20 +8,12 @@ pkg install -y mysql57-client
 
 print '&root' > ~nagios/.qmail
 
-grep '^nagios_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-nginx_enable="YES"
-fcgiwrap_enable="YES"
-fcgiwrap_user="www"
-fcgiwrap_socket_mode="700"
-fcgiwrap_socket_owner="www"
-fcgiwrap_socket_group="www"
-php_fpm_enable="YES"
-nagios_enable="YES"
-snmptrapd_enable="YES"
-snmptrapd_flags="-X"
-EOF
+sysrc nginx_enable="YES"
+sysrc fcgiwrap_enable="YES" fcgiwrap_user="www" fcgiwrap_socket_mode="700" \
+    fcgiwrap_socket_owner="www" fcgiwrap_socket_group="www"
+sysrc php_fpm_enable="YES"
+sysrc nagios_enable="YES"
+sysrc snmptrapd_enable="YES" snmptrapd_flags="-X"
 
 sed 's/^\[www\]/[nagios]/' /usr/local/etc/php-fpm.conf > \
     /usr/local/etc/php-fpm.conf~ && \

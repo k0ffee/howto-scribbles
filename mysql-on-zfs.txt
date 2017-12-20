@@ -133,11 +133,7 @@ pkg install -y daemontools
 
 mkdir -p /service /var/service
 
-grep '^svscan_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-svscan_enable="YES"
-EOF
+sysrc svscan_enable="YES"
 
 dir=/service/mysql-test
 mkdir -p $dir/log

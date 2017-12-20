@@ -8,9 +8,7 @@
 
 pkg install riak2 openjdk8
 vi /usr/local/etc/riak/riak.conf
-cat >> /etc/rc.conf <<'EOF'
-
-riak_enable="YES"
+sysrc riak_enable="YES"
 
 :
 : Edit

@@ -30,11 +30,7 @@ cd /usr/ports/www/nginx-lite && make install
 :
 cd /usr/local/etc/nginx && rm * && tar xf /root/nginx-conf.tar
 
-cat >> /etc/rc.conf <<'EOF'
-
-nginx_enable="YES"
-monit_enable="YES"
-EOF
+sysrc nginx_enable="YES" monit_enable="YES"
 service nginx start
 
 :

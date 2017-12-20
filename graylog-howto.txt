@@ -8,24 +8,13 @@ sed -e 's/^bind .*/bind 0.0.0.0/' /usr/local/etc/redis.conf \
     > /usr/local/etc/redis.conf~
 mv /usr/local/etc/redis.conf~ /usr/local/etc/redis.conf
 
-grep '^redis_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-redis_enable="YES"
-EOF
+sysrc redis_enable="YES"
 service redis start
 
 pkg install -y graylog mongodb ruby
 pkg install -y daemontools logstash socat
 
-grep '^graylog_enable='  /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-graylog_enable="YES"
-EOF
-grep '^mongod_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-mongod_enable="YES"
-EOF
+sysrc graylog_enable="YES" mongod_enable="YES"
 
 service graylog start
 service mongod start
@@ -61,10 +50,7 @@ chmod 755 $dir/run $dir/log/run
 
 chmod 640 /usr/local/etc/logstash/ssl/*
 chgrp daemon /usr/local/etc/logstash/ssl/*
-grep '^svscan_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-svscan_enable="YES"
-EOF
+sysrc svscan_enable="YES"
 mkdir -p /var/service && service svscan start
 cd /var/service && ln -fs /service/logstash .
 

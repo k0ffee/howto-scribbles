@@ -5,11 +5,7 @@
 ASSUME_ALWAYS_YES=yes \
     pkg install rabbitmq
 
-grep '^rabbitmq_enable=' /etc/rc.conf || \
-    cat >> /etc/rc.conf <<'EOF'
-
-rabbitmq_enable="YES"
-EOF
+sysrc rabbitmq_enable="YES"
 
 cookie=/var/db/rabbitmq/.erlang.cookie
 print -n EXAMPLEBODZEXAMPLEMH > $cookie
