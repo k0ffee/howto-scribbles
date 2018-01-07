@@ -13,7 +13,6 @@ make distribution DESTDIR=/jails/db-5-b
 sysrc jail_enable="YES" jail_list="db-5-b"
 
 cat > /etc/jail.conf <<'EOF'
-allow.raw_sockets;
 exec.start = "/bin/sh /etc/rc";
 exec.stop  = "/bin/sh /etc/rc.shutdown";
 mount.devfs;
