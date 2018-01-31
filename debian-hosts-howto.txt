@@ -56,7 +56,7 @@ hostname=$name
 EOF
 
 cat > /etc/sysctl.conf <<'EOF'
-vm.swappiness = 0
+vm.swappiness=1
 
 net.ipv4.tcp_tw_recycle=0
 net.ipv4.tcp_tw_reuse=0
