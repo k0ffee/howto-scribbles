@@ -1,0 +1,249 @@
+#
+# Simple keepalived configuration for a pair of gateway nodes.
+#
+# This uses two DNS AAAA and A records each for balancing traffic
+# across gateway nodes, while also keeping the addresses highly
+# available.
+#
+# Notice that each gateway node must not utilize more than 50% of its
+# capabilities (network, CPU, etc.), otherwise during failover
+# situations the remaining node would be overloaded. Still, the
+# configuration allows for load peaks in a cheap manner.
+#
+# For higher resiliency add a third node, having two backup virtual
+# interfaces to cover the active nodes. This way both active nodes
+# can be fully utilized and availability would still survive the
+# failure of one of the active nodes.
+#
+# One of the nodes additionally acts as the gateway node for traffic
+# from private network to public Internet.
+#
+
+vrrp_sync_group grp1 {
+     group {
+        pub1_v6
+        pub1_v4
+     }
+}
+
+vrrp_sync_group grp2 {
+     group {
+        pub2_v6
+        pub2_v4
+     }
+}
+
+vrrp_sync_group grp3 {
+     group {
+        prv1_v6
+        prv1_v4
+     }
+}
+
+vrrp_script proxy {
+    script "pgrep -x haproxy"
+    interval 5
+    fall 2
+    rise 2
+}
+
+vrrp_instance pub1_v6 {
+    interface eth0
+    virtual_router_id 1
+    state MASTER
+    priority 120
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass Thakee6a
+    }
+
+    unicast_src_ip 2001:db8::2
+
+    unicast_peer {
+        2001:db8::3
+    }
+
+    virtual_ipaddress {
+        2001:db8::4/64
+    }
+
+    track_interface {
+        eth0
+        eth1
+    }
+
+    track_script {
+        proxy
+    }
+
+    notify "/root/bin/keepalived-state"
+
+}
+
+vrrp_instance pub2_v6 {
+    interface eth0
+    virtual_router_id 2
+    state BACKUP
+    priority 100
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass agh6Nie9
+    }
+
+    unicast_src_ip 2001:db8::2
+
+    unicast_peer {
+        2001:db8::3
+    }
+
+    virtual_ipaddress {
+        2001:db8::5/64
+    }
+
+    track_interface {
+        eth0
+        eth1
+    }
+
+    track_script {
+        proxy
+    }
+
+    notify "/root/bin/keepalived-state"
+
+}
+
+vrrp_instance prv1_v6 {
+    interface eth1
+    virtual_router_id 3
+    state MASTER
+    priority 120
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass chigh6Ie
+    }
+
+    unicast_src_ip fd42:dc76:90a3::2
+
+    unicast_peer {
+        fd42:dc76:90a3::3
+    }
+
+    virtual_ipaddress {
+        fd42:dc76:90a3::4
+    }
+
+    track_interface {
+        eth0
+        eth1
+    }
+
+    notify "/root/bin/keepalived-state"
+
+}
+
+vrrp_instance pub1_v4 {
+    interface eth0
+    virtual_router_id 4
+    state MASTER
+    priority 120
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass Fahz3vi0
+    }
+
+    unicast_src_ip 192.0.2.2
+
+    unicast_peer {
+        192.0.2.3
+    }
+
+    virtual_ipaddress {
+        192.0.2.4/27
+    }
+
+    track_interface {
+        eth0
+        eth1
+    }
+
+    track_script {
+        proxy
+    }
+
+    notify "/root/bin/keepalived-state"
+
+}
+
+vrrp_instance pub2_v4 {
+    interface eth0
+    virtual_router_id 4
+    state BACKUP
+    priority 100
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass weiWio3i
+    }
+
+    unicast_src_ip 192.0.2.2
+
+    unicast_peer {
+        192.0.2.3
+    }
+
+    virtual_ipaddress {
+        192.0.2.5/27
+    }
+
+    track_interface {
+        eth0
+        eth1
+    }
+
+    track_script {
+        proxy
+    }
+
+    notify "/root/bin/keepalived-state"
+
+}
+
+vrrp_instance prv1_v4 {
+    interface eth1
+    virtual_router_id 5
+    state MASTER
+    priority 120
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass ti5ocheN
+    }
+
+    unicast_src_ip 192.0.2.2
+
+    unicast_peer {
+        192.0.2.3
+    }
+
+    virtual_ipaddress {
+        192.0.2.4/27
+    }
+
+    track_interface {
+        eth0
+        eth1
+    }
+
+    notify "/root/bin/keepalived-state"
+}
