@@ -64,7 +64,7 @@ mysql_install_db --defaults-extra-file=/usr/local/etc/mysql/my.cnf \
 :     myisam:
 :         - flush tables;
 :         - flush tables with read lock;
-:         - chok slave-open-temp-tables = 0;
+:         - check slave-open-temp-tables = 0;
 :
 
 :
