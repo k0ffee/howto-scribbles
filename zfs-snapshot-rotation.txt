@@ -2,7 +2,8 @@
 
 #
 # This creates ZFS snapshots and deletes them if
-# the snapshot list is long enough.
+# the snapshot count reaches a limit set as an
+# argument to this program.
 #
 # Example crontab entries:
 #
